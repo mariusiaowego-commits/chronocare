@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}{{ person.name }} - ChronoCare{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+            <span class="text-3xl">{{ '👩' if person.gender == 'F' else '👨' if person.gender == 'M' else '👤' }}</span>
+            <div>
+                <h1 class="text-2xl font-bold">{{ person.name }}</h1>
+                <p class="text-sm text-slate-500">
+                    {% if person.birth_date %}{{ person.birth_date }}{% endif %}
+                    {% if person.gender %} · {{ '女' if person.gender == 'F' else '男' }}{% endif %}
+                    {% if person.blood_type %} · {{ person.blood_type }}型{% endif %}
+                </p>
+            </div>
+        </div>
+        <a href="/persons/{{ person.id }}/edit"
+           class="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+            ✏️ 编辑
+        </a>
+    </div>
+
+    <!-- 基本信息卡片 -->
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+        {% if person.height_cm %}
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+            <p class="text-sm text-slate-500">身高</p>
+            <p class="text-xl font-semibold">{{ person.height_cm }} cm</p>
+        </div>
+        {% endif %}
+        {% if person.weight_kg %}
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+            <p class="text-sm text-slate-500">体重</p>
+            <p class="text-xl font-semibold">{{ person.weight_kg }} kg</p>
+        </div>
+        {% endif %}
+        {% if person.preferred_hospital %}
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+            <p class="text-sm text-slate-500">常用医院</p>
+            <p class="text-xl font-semibold">{{ person.preferred_hospital }}</p>
+        </div>
+        {% endif %}
+        {% if person.primary_doctor %}
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+            <p class="text-sm text-slate-500">主治医生</p>
+            <p class="text-xl font-semibold">{{ person.primary_doctor }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 疾病标签 -->
+    {% if person.disease_tags %}
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 mb-4">
+        <h2 class="font-semibold mb-3">🏷️ 疾病标签</h2>
+        <div class="flex flex-wrap gap-2">
+            {% for tag in person.disease_tags %}
+            <span class="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 rounded-full text-sm">{{ tag }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 疾病记录 -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 mb-4">
+        <h2 class="font-semibold mb-3">🩺 疾病记录</h2>
+        {% if person.conditions %}
+        <div class="space-y-3">
+            {% for c in person.conditions %}
+            <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                <div>
+                    <p class="font-medium">{{ c.name }}</p>
+                    <p class="text-sm text-slate-500">
+                        {% if c.diagnosed_date %}确诊: {{ c.diagnosed_date }}{% endif %}
+                        {% if c.diagnosed_by %} · {{ c.diagnosed_by }}{% endif %}
+                    </p>
+                </div>
+                <span class="px-2 py-0.5 rounded text-xs
+                    {{ 'bg-green-100 text-green-700' if c.status == 'resolved'
+                       else 'bg-yellow-100 text-yellow-700' if c.status == 'managed'
+                       else 'bg-red-100 text-red-700' }}">
+                    {{ '已康复' if c.status == 'resolved' else '控制中' if c.status == 'managed' else '活跃' }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-slate-500 text-sm">暂无疾病记录</p>
+        {% endif %}
+    </div>
+
+    <!-- 备注 -->
+    {% if person.notes %}
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+        <h2 class="font-semibold mb-3">📝 备注</h2>
+        <p class="text-slate-600 dark:text-slate-400 whitespace-pre-wrap">{{ person.notes }}</p>
+    </div>
+    {% endif %}
+
+    <!-- 快捷入口 -->
+    <div class="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <a href="/blood-sugar?person_id={{ person.id }}" class="text-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition">
+            <span class="text-2xl">🩸</span>
+            <p class="text-sm mt-1">血糖记录</p>
+        </a>
+        <a href="/medication?person_id={{ person.id }}" class="text-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition">
+            <span class="text-2xl">💊</span>
+            <p class="text-sm mt-1">用药管理</p>
+        </a>
+        <a href="/visits?person_id={{ person.id }}" class="text-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition">
+            <span class="text-2xl">🏥</span>
+            <p class="text-sm mt-1">就诊记录</p>
+        </a>
+        <a href="/cardiac?person_id={{ person.id }}" class="text-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition">
+            <span class="text-2xl">❤️</span>
+            <p class="text-sm mt-1">心脏指标</p>
+        </a>
+    </div>
+</div>
+{% endblock %}

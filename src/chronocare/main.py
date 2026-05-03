@@ -6,6 +6,9 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from chronocare.routers.api.person import router as api_person_router
+from chronocare.routers.pages.person import router as pages_person_router
+
 app = FastAPI(title="ChronoCare", description="老年父母健康管理平台", version="0.1.0")
 
 # Paths
@@ -18,6 +21,10 @@ app.mount("/static", StaticFiles(directory=str(_STATIC)), name="static")
 
 # Template engine
 templates = Jinja2Templates(directory=str(_TEMPLATES))
+
+# Register routers
+app.include_router(api_person_router)
+app.include_router(pages_person_router)
 
 
 @app.get("/")
