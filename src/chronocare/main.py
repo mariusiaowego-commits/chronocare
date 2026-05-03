@@ -61,3 +61,37 @@ async def root():
 async def health_check():
     """Health probe for monitoring."""
     return {"status": "healthy"}
+
+
+@app.get("/wiki")
+async def wiki_placeholder():
+    """Wiki — coming soon."""
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(
+        "<!DOCTYPE html><html><head><title>知识库 - ChronoCare</title>"
+        "<script src='https://cdn.tailwindcss.com'></script></head>"
+        "<body class='bg-slate-50 min-h-screen flex items-center justify-center'>"
+        "<div class='text-center'>"
+        "<p class='text-6xl mb-4'>📚</p>"
+        "<h1 class='text-2xl font-bold mb-2'>知识库</h1>"
+        "<p class='text-slate-500'>功能开发中，敬请期待</p>"
+        "<a href='/dashboard' class='text-blue-600 hover:underline mt-4 inline-block'>← 返回仪表盘</a>"
+        "</div></body></html>"
+    )
+
+
+@app.get("/news")
+async def news_placeholder():
+    """News — coming soon."""
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(
+        "<!DOCTYPE html><html><head><title>资讯 - ChronoCare</title>"
+        "<script src='https://cdn.tailwindcss.com'></script></head>"
+        "<body class='bg-slate-50 min-h-screen flex items-center justify-center'>"
+        "<div class='text-center'>"
+        "<p class='text-6xl mb-4'>📰</p>"
+        "<h1 class='text-2xl font-bold mb-2'>健康资讯</h1>"
+        "<p class='text-slate-500'>功能开发中，敬请期待</p>"
+        "<a href='/dashboard' class='text-blue-600 hover:underline mt-4 inline-block'>← 返回仪表盘</a>"
+        "</div></body></html>"
+    )

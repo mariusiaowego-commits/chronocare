@@ -1,6 +1,6 @@
 """Cardiac HTML pages."""
 
-from datetime import datetime
+from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -30,7 +30,7 @@ async def cardiac_list(request: Request, person_id: int | None = Query(None), db
 async def bp_new(request: Request, person_id: int | None = Query(None), db: AsyncSession = Depends(get_db)):
     persons = await list_persons(db)
     return templates.TemplateResponse(request, "cardiac/bp_form.html", {
-        "request": request, "persons": persons, "selected_person_id": person_id,
+        "request": request, "persons": persons, "selected_person_id": person_id, "today": date.today().isoformat(),
     })
 
 
