@@ -18,7 +18,7 @@ templates = Jinja2Templates(directory=str(__import__("pathlib").Path(__file__).r
 async def visit_list(request: Request, person_id: int | None = Query(None), db: AsyncSession = Depends(get_db)):
     visits = await list_visits(db, person_id)
     persons = await list_persons(db)
-    return templates.TemplateResponse("visit/list.html", {
+    return templates.TemplateResponse(request, "visit/list.html", {
         "request": request, "visits": visits, "persons": persons, "selected_person_id": person_id,
     })
 
@@ -26,7 +26,7 @@ async def visit_list(request: Request, person_id: int | None = Query(None), db: 
 @router.get("/visits/new", response_class=HTMLResponse)
 async def visit_new(request: Request, person_id: int | None = Query(None), db: AsyncSession = Depends(get_db)):
     persons = await list_persons(db)
-    return templates.TemplateResponse("visit/form.html", {
+    return templates.TemplateResponse(request, "visit/form.html", {
         "request": request, "persons": persons, "selected_person_id": person_id,
     })
 

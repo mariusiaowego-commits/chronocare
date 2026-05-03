@@ -20,7 +20,7 @@ templates = Jinja2Templates(directory=str(__import__("pathlib").Path(__file__).r
 async def blood_sugar_list(request: Request, person_id: int | None = Query(None), db: AsyncSession = Depends(get_db)):
     records = await list_blood_sugar(db, person_id)
     persons = await list_persons(db)
-    return templates.TemplateResponse("blood_sugar/list.html", {
+    return templates.TemplateResponse(request, "blood_sugar/list.html", {
         "request": request, "records": records, "persons": persons, "selected_person_id": person_id,
     })
 
@@ -28,7 +28,7 @@ async def blood_sugar_list(request: Request, person_id: int | None = Query(None)
 @router.get("/blood-sugar/new", response_class=HTMLResponse)
 async def blood_sugar_new(request: Request, person_id: int | None = Query(None), db: AsyncSession = Depends(get_db)):
     persons = await list_persons(db)
-    return templates.TemplateResponse("blood_sugar/form.html", {
+    return templates.TemplateResponse(request, "blood_sugar/form.html", {
         "request": request, "persons": persons, "selected_person_id": person_id,
     })
 

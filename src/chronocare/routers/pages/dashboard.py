@@ -34,7 +34,7 @@ async def dashboard(request: Request, person_id: int | None = Query(None), db: A
     plans = await list_plans(db, person_id) if person_id else []
     visits = await list_visits(db, person_id) if person_id else []
 
-    return templates.TemplateResponse("dashboard.html", {
+    return templates.TemplateResponse(request, "dashboard.html", {
         "request": request,
         "persons": persons,
         "selected": selected,

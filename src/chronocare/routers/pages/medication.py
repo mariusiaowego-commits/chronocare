@@ -19,7 +19,7 @@ async def medication_list(request: Request, person_id: int | None = Query(None),
     plans = await list_plans(db, person_id)
     medications = await list_medications(db)
     persons = await list_persons(db)
-    return templates.TemplateResponse("medication/list.html", {
+    return templates.TemplateResponse(request, "medication/list.html", {
         "request": request, "plans": plans, "medications": medications,
         "persons": persons, "selected_person_id": person_id,
     })
@@ -29,7 +29,7 @@ async def medication_list(request: Request, person_id: int | None = Query(None),
 async def medication_new(request: Request, person_id: int | None = Query(None), db: AsyncSession = Depends(get_db)):
     medications = await list_medications(db)
     persons = await list_persons(db)
-    return templates.TemplateResponse("medication/form.html", {
+    return templates.TemplateResponse(request, "medication/form.html", {
         "request": request, "medications": medications, "persons": persons, "selected_person_id": person_id,
     })
 
@@ -54,7 +54,7 @@ async def medication_create(request: Request, db: AsyncSession = Depends(get_db)
 
 @router.get("/medication/meds/new", response_class=HTMLResponse)
 async def med_new(request: Request):
-    return templates.TemplateResponse("medication/med_form.html", {"request": request})
+    return templates.TemplateResponse(request, "medication/med_form.html", {"request": request})
 
 
 @router.post("/medication/meds/new", response_class=HTMLResponse)

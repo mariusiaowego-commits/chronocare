@@ -16,12 +16,12 @@ templates = Jinja2Templates(directory=str(__import__("pathlib").Path(__file__).r
 @router.get("/persons", response_class=HTMLResponse)
 async def person_list(request: Request, db: AsyncSession = Depends(get_db)):
     persons = await list_persons(db)
-    return templates.TemplateResponse("person/list.html", {"request": request, "persons": persons})
+    return templates.TemplateResponse(request, "person/list.html", {"request": request, "persons": persons})
 
 
 @router.get("/persons/new", response_class=HTMLResponse)
 async def person_new(request: Request):
-    return templates.TemplateResponse("person/form.html", {"request": request, "person": None})
+    return templates.TemplateResponse(request, "person/form.html", {"request": request, "person": None})
 
 
 @router.post("/persons/new", response_class=HTMLResponse)
@@ -45,7 +45,7 @@ async def person_detail(request: Request, person_id: int, db: AsyncSession = Dep
     person = await get_person(db, person_id)
     if person is None:
         return HTMLResponse("Not found", status_code=404)
-    return templates.TemplateResponse("person/detail.html", {"request": request, "person": person})
+    return templates.TemplateResponse(request, "person/detail.html", {"request": request, "person": person})
 
 
 @router.get("/persons/{person_id}/edit", response_class=HTMLResponse)
@@ -53,4 +53,4 @@ async def person_edit(request: Request, person_id: int, db: AsyncSession = Depen
     person = await get_person(db, person_id)
     if person is None:
         return HTMLResponse("Not found", status_code=404)
-    return templates.TemplateResponse("person/form.html", {"request": request, "person": person})
+    return templates.TemplateResponse(request, "person/form.html", {"request": request, "person": person})

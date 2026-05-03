@@ -3,7 +3,7 @@
 from datetime import date, datetime
 
 from sqlalchemy import Boolean, CheckConstraint, ForeignKey, JSON, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from chronocare.models.base import Base
 
@@ -41,6 +41,8 @@ class MedicationPlan(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     notes: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+    medication: Mapped["Medication"] = relationship("Medication", lazy="selectin")
 
 
 class MedicationLog(Base):

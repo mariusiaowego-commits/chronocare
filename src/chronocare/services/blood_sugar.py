@@ -9,7 +9,7 @@ from chronocare.schemas.blood_sugar import BloodSugarCreate, BloodSugarUpdate
 
 async def list_blood_sugar(db: AsyncSession, person_id: int | None = None) -> list[BloodSugarRecord]:
     """List blood sugar records, optionally filtered by person."""
-    stmt = select(BloodSugarRecord).order_by(BloodSugarRecord.record_date.desc(), BloodSugarRecord.record_time.desc())
+    stmt = select(BloodSugarRecord).order_by(BloodSugarRecord.measured_at.desc())
     if person_id is not None:
         stmt = stmt.where(BloodSugarRecord.person_id == person_id)
     result = await db.execute(stmt)
