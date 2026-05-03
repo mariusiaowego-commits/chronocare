@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}用药管理 - ChronoCare{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold">💊 用药管理</h1>
+        <div class="flex gap-2">
+            <a href="/medication/meds/new"
+               class="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                + 添加药品
+            </a>
+            <a href="/medication/new{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}"
+               class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                + 添加用药计划
+            </a>
+        </div>
+    </div>
+
+    <!-- 人员筛选 -->
+    <div class="mb-4 flex gap-2 flex-wrap">
+        <a href="/medication"
+           class="px-3 py-1 rounded-full text-sm {{ 'bg-blue-600 text-white' if not selected_person_id else 'bg-slate-200 dark:bg-slate-700' }}">全部</a>
+        {% for p in persons %}
+        <a href="/medication?person_id={{ p.id }}"
+           class="px-3 py-1 rounded-full text-sm {{ 'bg-blue-600 text-white' if selected_person_id == p.id else 'bg-slate-200 dark:bg-slate-700' }}">{{ p.name }}</a>
+        {% endfor %}
+    </div>
+
+    {% if plans %}
+    <div class="space-y-3">
+        {% for plan in plans %}
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="font-semibold text-lg">{{ plan.medication.name if plan.medication else '药品 #' ~ plan.medication_id }}</h3>
+                    <p class="text-sm text-slate-500">
+                        {{ plan.dosage }} ·
+                        {{ '每日一次' if plan.frequency == 'daily'
+                           else '每日两次' if plan.frequency == 'twice_daily'
+                           else '每日三次' if plan.frequency == 'three_times_daily'
+                           else '每周' if plan.frequency == 'weekly'
+                           else '按需' }}
+                        {% if plan.timing %} · {{ plan.timing }}{% endif %}
+                    </p>
+                </div>
+                <span class="px-3 py-1 rounded-full text-sm
+                    {{ 'bg-green-100 text-green-700' if plan.is_active else 'bg-slate-200 text-slate-500' }}">
+                    {{ '进行中' if plan.is_active else '已停用' }}
+                </span>
+            </div>
+            <div class="mt-3 text-sm text-slate-600 dark:text-slate-400">
+                <p>📅 {{ plan.start_date }}{% if plan.end_date %} → {{ plan.end_date }}{% endif %}</p>
+                {% if plan.notes %}
+                <p class="mt-1">📝 {{ plan.notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12 text-slate-500">
+        <p class="text-4xl mb-4">💊</p>
+        <p>还没有用药计划</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

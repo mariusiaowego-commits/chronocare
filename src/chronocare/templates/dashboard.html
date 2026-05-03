@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}仪表盘 - ChronoCare{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- 老人切换器 -->
+    <div class="mb-6 flex items-center gap-4">
+        <h1 class="text-2xl font-bold">📊 仪表盘</h1>
+        <div class="flex gap-2 flex-wrap">
+            {% for p in persons %}
+            <a href="/dashboard?person_id={{ p.id }}"
+               class="px-4 py-2 rounded-full text-sm font-medium transition
+                  {{ 'bg-blue-600 text-white shadow-md' if selected and selected.id == p.id
+                     else 'bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700' }}">
+                {{ '👩' if p.gender == 'F' else '👨' if p.gender == 'M' else '👤' }} {{ p.name }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if selected %}
+    <!-- 个人信息卡 -->
+    <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-6 mb-6 text-white">
+        <div class="flex items-center gap-4">
+            <span class="text-5xl">{{ '👩' if selected.gender == 'F' else '👨' if selected.gender == 'M' else '👤' }}</span>
+            <div>
+                <h2 class="text-2xl font-bold">{{ selected.name }}</h2>
+                <p class="opacity-90">
+                    {% if selected.birth_date %}{{ selected.birth_date }}{% endif %}
+                    {% if selected.height_cm %} · {{ selected.height_cm }}cm{% endif %}
+                    {% if selected.weight_kg %} · {{ selected.weight_kg }}kg{% endif %}
+                    {% if selected.blood_type %} · {{ selected.blood_type }}型{% endif %}
+                </p>
+                {% if selected.disease_tags %}
+                <div class="flex flex-wrap gap-1 mt-2">
+                    {% for tag in selected.disease_tags %}
+                    <span class="px-2 py-0.5 bg-white/20 rounded text-xs">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 快捷操作 -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <a href="/blood-sugar/new?person_id={{ selected.id }}" class="text-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition">
+            <span class="text-2xl">🩸</span>
+            <p class="text-sm mt-1">记录血糖</p>
+        </a>
+        <a href="/cardiac/bp/new?person_id={{ selected.id }}" class="text-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition">
+            <span class="text-2xl">❤️</span>
+            <p class="text-sm mt-1">记录血压</p>
+        </a>
+        <a href="/visits/new?person_id={{ selected.id }}" class="text-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition">
+            <span class="text-2xl">🏥</span>
+            <p class="text-sm mt-1">添加就诊</p>
+        </a>
+        <a href="/medication/new?person_id={{ selected.id }}" class="text-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition">
+            <span class="text-2xl">💊</span>
+            <p class="text-sm mt-1">用药计划</p>
+        </a>
+    </div>
+
+    <!-- 数据卡片网格 -->
+    <div class="grid gap-6 lg:grid-cols-2">
+        <!-- 最近血糖 -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold">🩸 最近血糖</h3>
+                <a href="/blood-sugar?person_id={{ selected.id }}" class="text-sm text-blue-600 hover:underline">查看全部</a>
+            </div>
+            {% if bs_records %}
+            <div class="space-y-2">
+                {% for r in bs_records %}
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-slate-500">{{ r.measured_at.strftime('%m-%d %H:%M') }}</span>
+                    <span class="font-semibold
+                        {{ 'text-red-600' if r.value > 11.1
+                           else 'text-yellow-600' if r.value > 7.8
+                           else 'text-green-600' }}">
+                        {{ r.value }} mmol/L
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-slate-400 text-sm">暂无记录</p>
+            {% endif %}
+        </div>
+
+        <!-- 最近血压 -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold">❤️ 最近血压</h3>
+                <a href="/cardiac?person_id={{ selected.id }}" class="text-sm text-blue-600 hover:underline">查看全部</a>
+            </div>
+            {% if bp_records %}
+            <div class="space-y-2">
+                {% for r in bp_records %}
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-slate-500">{{ r.measured_at.strftime('%m-%d %H:%M') }}</span>
+                    <span class="font-semibold">{{ r.systolic }}/{{ r.diastolic }} mmHg</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-slate-400 text-sm">暂无记录</p>
+            {% endif %}
+        </div>
+
+        <!-- 用药计划 -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold">💊 用药计划</h3>
+                <a href="/medication?person_id={{ selected.id }}" class="text-sm text-blue-600 hover:underline">查看全部</a>
+            </div>
+            {% if plans %}
+            <div class="space-y-2">
+                {% for plan in plans %}
+                <div class="flex items-center justify-between text-sm">
+                    <span>{{ plan.medication.name if plan.medication else '药品 #' ~ plan.medication_id }}</span>
+                    <span class="text-slate-500">{{ plan.dosage }} · {{ plan.frequency }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-slate-400 text-sm">暂无用药计划</p>
+            {% endif %}
+        </div>
+
+        <!-- 最近就诊 -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold">🏥 最近就诊</h3>
+                <a href="/visits?person_id={{ selected.id }}" class="text-sm text-blue-600 hover:underline">查看全部</a>
+            </div>
+            {% if visits %}
+            <div class="space-y-3">
+                {% for v in visits %}
+                <div class="text-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="font-medium">{{ v.hospital or '未记录' }}</span>
+                        <span class="text-slate-500">{{ v.visit_date }}</span>
+                    </div>
+                    {% if v.diagnosis %}
+                    <p class="text-slate-500 mt-0.5">{{ v.diagnosis }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-slate-400 text-sm">暂无就诊记录</p>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-16 text-slate-500">
+        <p class="text-5xl mb-4">👤</p>
+        <p class="text-lg">还没有添加老人</p>
+        <a href="/persons/new" class="text-blue-600 hover:underline mt-2 inline-block">添加第一位老人</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

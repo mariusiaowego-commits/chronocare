@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}心脏指标 - ChronoCare{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold">❤️ 血压记录</h1>
+        <a href="/cardiac/bp/new{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}"
+           class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">+ 记录血压</a>
+    </div>
+
+    <!-- 人员筛选 -->
+    <div class="mb-4 flex gap-2 flex-wrap">
+        <a href="/cardiac"
+           class="px-3 py-1 rounded-full text-sm {{ 'bg-blue-600 text-white' if not selected_person_id else 'bg-slate-200 dark:bg-slate-700' }}">全部</a>
+        {% for p in persons %}
+        <a href="/cardiac?person_id={{ p.id }}"
+           class="px-3 py-1 rounded-full text-sm {{ 'bg-blue-600 text-white' if selected_person_id == p.id else 'bg-slate-200 dark:bg-slate-700' }}">{{ p.name }}</a>
+        {% endfor %}
+    </div>
+
+    {% if bp_records %}
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-slate-50 dark:bg-slate-700">
+                <tr>
+                    <th class="px-4 py-3 text-left">时间</th>
+                    <th class="px-4 py-3 text-right">收缩压</th>
+                    <th class="px-4 py-3 text-right">舒张压</th>
+                    <th class="px-4 py-3 text-right">心率</th>
+                    <th class="px-4 py-3 text-center">状态</th>
+                    <th class="px-4 py-3 text-left">备注</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+                {% for r in bp_records %}
+                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                    <td class="px-4 py-3">{{ r.measured_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td class="px-4 py-3 text-right font-semibold
+                        {{ 'text-red-600' if r.systolic >= 140 else 'text-yellow-600' if r.systolic >= 130 else 'text-green-600' }}">
+                        {{ r.systolic }}</td>
+                    <td class="px-4 py-3 text-right font-semibold
+                        {{ 'text-red-600' if r.diastolic >= 90 else 'text-yellow-600' if r.diastolic >= 85 else 'text-green-600' }}">
+                        {{ r.diastolic }}</td>
+                    <td class="px-4 py-3 text-right">{{ r.heart_rate or '-' }} bpm</td>
+                    <td class="px-4 py-3 text-center">
+                        {% if r.is_alert %}<span class="text-red-500">⚠️</span>{% else %}<span class="text-green-500">✓</span>{% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-slate-500">{{ r.notes or '' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-12 text-slate-500">
+        <p class="text-4xl mb-4">❤️</p>
+        <p>暂无血压记录</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

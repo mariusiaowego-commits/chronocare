@@ -6,8 +6,20 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+# API routers
 from chronocare.routers.api.person import router as api_person_router
+from chronocare.routers.api.blood_sugar import router as api_bs_router
+from chronocare.routers.api.cardiac import router as api_cardiac_router
+from chronocare.routers.api.medication import router as api_med_router
+from chronocare.routers.api.visit import router as api_visit_router
+
+# Page routers
+from chronocare.routers.pages.dashboard import router as pages_dashboard_router
 from chronocare.routers.pages.person import router as pages_person_router
+from chronocare.routers.pages.blood_sugar import router as pages_bs_router
+from chronocare.routers.pages.cardiac import router as pages_cardiac_router
+from chronocare.routers.pages.medication import router as pages_med_router
+from chronocare.routers.pages.visit import router as pages_visit_router
 
 app = FastAPI(title="ChronoCare", description="老年父母健康管理平台", version="0.1.0")
 
@@ -22,15 +34,27 @@ app.mount("/static", StaticFiles(directory=str(_STATIC)), name="static")
 # Template engine
 templates = Jinja2Templates(directory=str(_TEMPLATES))
 
-# Register routers
+# Register API routers
 app.include_router(api_person_router)
+app.include_router(api_bs_router)
+app.include_router(api_cardiac_router)
+app.include_router(api_med_router)
+app.include_router(api_visit_router)
+
+# Register page routers
+app.include_router(pages_dashboard_router)
 app.include_router(pages_person_router)
+app.include_router(pages_bs_router)
+app.include_router(pages_cardiac_router)
+app.include_router(pages_med_router)
+app.include_router(pages_visit_router)
 
 
 @app.get("/")
 async def root():
-    """Health check / landing."""
-    return {"message": "Welcome to ChronoCare", "version": "0.1.0"}
+    """Redirect to dashboard."""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/dashboard")
 
 
 @app.get("/health")
