@@ -4,52 +4,49 @@
 
 ## 技术栈
 
-- **后端**: FastAPI
-- **前端**: HTMX + Jinja2 模板
-- **数据库**: SQLite
-- **样式**: 待定 (可选 Tailwind CSS 或自定义 CSS)
-
-## 项目结构
-
-```
-chronocare/
-├── app/                    # 主应用目录
-│   ├── routers/           # 路由处理
-│   ├── models/            # 数据模型
-│   ├── schemas/           # Pydantic schemas
-│   ├── services/          # 业务逻辑
-│   └── main.py           # FastAPI 入口
-├── templates/             # HTMX/Jinja2 模板
-├── static/                # 静态资源
-│   ├── css/
-│   ├── js/
-│   └── img/
-├── data/                  # SQLite 数据库文件
-├── tests/                 # 测试
-├── requirements.txt       # 依赖
-└── README.md
-```
+- **后端**: FastAPI + SQLAlchemy 2.0 + Alembic
+- **前端**: HTMX + Tailwind CSS + Jinja2 + Chart.js
+- **数据库**: SQLite (WAL mode)
+- **包管理**: uv
 
 ## 快速开始
 
 ```bash
-# 创建虚拟环境
-python -m venv venv
-source venv/bin/activate  # macOS/Linux
-
 # 安装依赖
-pip install -r requirements.txt
+uv sync
 
-# 运行应用
-uvicorn app.main:app --reload
+# 启动开发服务器
+uv run uvicorn chronocare.main:app --reload
+
+# 访问
+open http://localhost:8000
 ```
 
-访问 http://localhost:8000
+## 项目结构
 
-## 功能规划
+```
+src/chronocare/
+├── main.py          # FastAPI 入口
+├── config.py        # 配置
+├── database.py      # 数据库引擎
+├── models/          # ORM 模型
+├── schemas/         # Pydantic schemas
+├── routers/         # API + 页面路由
+├── services/        # 业务逻辑
+├── templates/       # Jinja2 模板
+└── static/          # 静态资源
+```
 
-- [ ] 用户管理（家庭成员）
-- [ ] 健康数据记录
-- [ ] 用药提醒
-- [ ] 就诊记录
-- [ ] 健康报告生成
+## 开发
+
+```bash
+# 运行测试
+uv run pytest
+
+# Lint
+uv run ruff check .
+uv run ruff format .
+
+# 类型检查
+uv run mypy src/
+```
