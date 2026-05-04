@@ -23,6 +23,7 @@ from chronocare.routers.api.alerts import router as api_alerts_router
 from chronocare.routers.api.health_report import router as api_health_report_router
 from chronocare.routers.api.notification import router as api_notification_router
 from chronocare.routers.api.bs_analysis import router as api_bs_analysis_router
+from chronocare.routers.api.bp_circadian import router as api_bp_circadian_router
 
 # Page routers
 from chronocare.routers.pages.dashboard import router as pages_dashboard_router
@@ -38,6 +39,7 @@ from chronocare.routers.pages.medication_reminder import router as pages_med_rem
 from chronocare.routers.pages.health_profile import router as pages_health_profile_router
 from chronocare.routers.pages.health_report import router as pages_health_report_router
 from chronocare.routers.pages.bs_analysis import router as pages_bs_analysis_router
+from chronocare.routers.pages.bp_circadian import router as pages_bp_circadian_router
 
 app = FastAPI(title="ChronoCare", description="老年父母健康管理平台", version="0.2.0")
 
@@ -69,6 +71,7 @@ app.include_router(api_alerts_router)
 app.include_router(api_health_report_router)
 app.include_router(api_notification_router)
 app.include_router(api_bs_analysis_router)
+app.include_router(api_bp_circadian_router)
 
 # Register page routers
 app.include_router(pages_dashboard_router)
@@ -84,6 +87,7 @@ app.include_router(pages_med_reminder_router)
 app.include_router(pages_health_profile_router)
 app.include_router(pages_health_report_router)
 app.include_router(pages_bs_analysis_router)
+app.include_router(pages_bp_circadian_router)
 
 
 @app.get("/")
