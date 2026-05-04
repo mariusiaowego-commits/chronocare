@@ -19,6 +19,33 @@
     </div>
 
     {% if selected %}
+    <!-- 健康预警 -->
+    {% if alerts %}
+    <div class="mb-6 rounded-xl border-2 {{ 'border-red-400 bg-red-50 dark:bg-red-900/20' if has_critical else 'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20' }} p-5">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-xl">{{ '🚨' if has_critical else '⚠️' }}</span>
+            <h3 class="font-semibold {{ 'text-red-800 dark:text-red-300' if has_critical else 'text-yellow-800 dark:text-yellow-300' }}">
+                健康预警 ({{ alert_count }} 项)
+            </h3>
+        </div>
+        <div class="grid gap-2 sm:grid-cols-2">
+            {% for alert in alerts %}
+            <div class="flex items-start gap-2 p-3 rounded-lg {{ 'bg-red-100 dark:bg-red-900/30' if alert.severity == 'critical' else 'bg-yellow-100 dark:bg-yellow-900/30' if alert.severity == 'high' else 'bg-orange-100 dark:bg-orange-900/30' }}">
+                <span class="text-lg">{{ alert.icon }}</span>
+                <div>
+                    <p class="font-medium text-sm {{ 'text-red-800 dark:text-red-300' if alert.severity == 'critical' else 'text-yellow-800 dark:text-yellow-300' if alert.severity == 'high' else 'text-orange-800 dark:text-orange-300' }}">
+                        {{ alert.title }}
+                    </p>
+                    <p class="text-xs {{ 'text-red-600 dark:text-red-400' if alert.severity == 'critical' else 'text-yellow-600 dark:text-yellow-400' if alert.severity == 'high' else 'text-orange-600 dark:text-orange-400' }}">
+                        {{ alert.message }}
+                    </p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- 个人信息卡 -->
     <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-6 mb-6 text-white">
         <div class="flex items-center gap-4">

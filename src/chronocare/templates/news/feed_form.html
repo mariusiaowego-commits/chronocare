@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{% if feed %}编辑 RSS 源{% else %}添加 RSS 源{% endif %}{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">{% if feed %}编辑 RSS 源{% else %}📡 添加 RSS 源{% endif %}</h1>
+
+<form method="post" action="{% if feed %}/news/feeds/{{ feed.id }}/edit{% else %}/news/feeds/new{% endif %}" class="max-w-lg">
+  <div class="space-y-4">
+    <div>
+      <label class="block text-sm font-medium mb-1">名称 *</label>
+      <input type="text" name="name" value="{{ feed.name if feed else '' }}" required
+             placeholder="如: 丁香医生"
+             class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-purple-500">
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">RSS URL *</label>
+      <input type="url" name="url" value="{{ feed.url if feed else '' }}" required
+             placeholder="https://example.com/rss"
+             class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-purple-500">
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">分类</label>
+      <input type="text" name="category" value="{{ feed.category if feed else '' }}"
+             placeholder="如: 健康、医学"
+             class="w-full border rounded px-3 py-2">
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">抓取间隔 (小时)</label>
+      <input type="number" name="fetch_interval_hours" value="{{ feed.fetch_interval_hours if feed else 4 }}"
+             min="1" max="168" class="w-full border rounded px-3 py-2">
+    </div>
+
+    <div class="flex items-center gap-2">
+      <input type="checkbox" name="is_active" id="is_active" value="true"
+             {% if not feed or feed.is_active %}checked{% endif %} class="rounded">
+      <label for="is_active" class="text-sm">启用自动抓取</label>
+    </div>
+
+    <div class="flex gap-3 pt-4">
+      <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700">
+        {% if feed %}保存修改{% else %}添加 RSS 源{% endif %}
+      </button>
+      <a href="/news/feeds/manage" class="bg-gray-300 px-6 py-2 rounded hover:bg-gray-400">取消</a>
+    </div>
+  </div>
+</form>
+{% endblock %}

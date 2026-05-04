@@ -10,6 +10,7 @@ from chronocare.services.blood_sugar import list_blood_sugar
 from chronocare.services.cardiac import list_bp
 from chronocare.services.medication import list_plans
 from chronocare.services.person import list_persons
+from chronocare.services.trend_alert import get_all_alerts
 from chronocare.services.visit import list_visits
 
 router = APIRouter(tags=["pages"])
@@ -33,6 +34,7 @@ async def dashboard(request: Request, person_id: int | None = Query(None), db: A
     bp_records = await list_bp(db, person_id) if person_id else []
     plans = await list_plans(db, person_id) if person_id else []
     visits = await list_visits(db, person_id) if person_id else []
+    alerts_data = await get_all_alerts(person_id, db) if person_id else {"alerts": [], "alert_count": 0, "has_critical": False}
 
     return templates.TemplateResponse(request, "dashboard.html", {
         "request": request,
@@ -43,4 +45,7 @@ async def dashboard(request: Request, person_id: int | None = Query(None), db: A
         "bp_records": bp_records[:5],
         "plans": plans,
         "visits": visits[:3],
+        "alerts": alerts_data["alerts"],
+        "alert_count": alerts_data["alert_count"],
+        "has_critical": alerts_data["has_critical"],
     })
