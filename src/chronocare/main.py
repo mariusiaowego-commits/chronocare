@@ -17,6 +17,7 @@ from chronocare.routers.api.news import router as api_news_router
 from chronocare.routers.api.reports import router as api_reports_router
 from chronocare.routers.api.admin import router as api_admin_router
 from chronocare.routers.api.medication_reminder import router as api_med_reminder_router
+from chronocare.routers.api.cardiac_analysis import router as api_cardiac_analysis_router
 
 # Page routers
 from chronocare.routers.pages.dashboard import router as pages_dashboard_router
@@ -54,6 +55,7 @@ app.include_router(api_news_router)
 app.include_router(api_reports_router)
 app.include_router(api_admin_router)
 app.include_router(api_med_reminder_router)
+app.include_router(api_cardiac_analysis_router)
 
 # Register page routers
 app.include_router(pages_dashboard_router)

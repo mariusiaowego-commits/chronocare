@@ -42,13 +42,22 @@ async def bp_create(request: Request, db: AsyncSession = Depends(get_db)):
     time_str = form.get("record_time") or "00:00"
     measured_at = datetime.fromisoformat(f"{date_str}T{time_str}")
 
+    # Auto-calculate alert based on BP grading
+    systolic = int(form["systolic"])
+    diastolic = int(form["diastolic"])
+    heart_rate = int(form["heart_rate"]) if form.get("heart_rate") else None
+
+    from chronocare.services.cardiac_analysis import should_alert
+    is_alert = should_alert(systolic, diastolic, heart_rate)
+
     data = BloodPressureCreate(
         person_id=int(form["person_id"]),
         measured_at=measured_at,
-        systolic=int(form["systolic"]),
-        diastolic=int(form["diastolic"]),
-        heart_rate=int(form["heart_rate"]) if form.get("heart_rate") else None,
+        systolic=systolic,
+        diastolic=diastolic,
+        heart_rate=heart_rate,
         notes=form.get("notes") or None,
+        is_alert=is_alert,
     )
     await create_bp(db, data)
     return RedirectResponse(url=f"/cardiac?person_id={data.person_id}", status_code=303)
