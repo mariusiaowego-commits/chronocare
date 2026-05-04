@@ -25,6 +25,7 @@ from chronocare.routers.api.notification import router as api_notification_route
 from chronocare.routers.api.bs_analysis import router as api_bs_analysis_router
 from chronocare.routers.api.bp_circadian import router as api_bp_circadian_router
 from chronocare.routers.api.med_adherence import router as api_med_adherence_router
+from chronocare.routers.api.pdf_report import router as api_pdf_report_router
 
 # Page routers
 from chronocare.routers.pages.dashboard import router as pages_dashboard_router
@@ -75,6 +76,7 @@ app.include_router(api_notification_router)
 app.include_router(api_bs_analysis_router)
 app.include_router(api_bp_circadian_router)
 app.include_router(api_med_adherence_router)
+app.include_router(api_pdf_report_router)
 
 # Register page routers
 app.include_router(pages_dashboard_router)
