@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "check_git": true,
+  "check_worktree": false,
+  "check_status_md": false,
+  "check_process": null,
+  "priority": "low"
+}

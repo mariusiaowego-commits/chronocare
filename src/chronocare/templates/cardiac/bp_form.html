@@ -31,18 +31,39 @@
         <div class="grid grid-cols-3 gap-4">
             <div>
                 <label class="block text-sm font-medium mb-1">收缩压 (mmHg) *</label>
-                <input type="number" name="systolic" required inputmode="numeric"
+                <input type="number" name="systolic" id="systolic" required inputmode="numeric" min="60" max="300"
+                       oninput="updateGrade()"
                        class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1">舒张压 (mmHg) *</label>
-                <input type="number" name="diastolic" required inputmode="numeric"
+                <input type="number" name="diastolic" id="diastolic" required inputmode="numeric" min="30" max="200"
+                       oninput="updateGrade()"
                        class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1">心率 (bpm)</label>
-                <input type="number" name="heart_rate" inputmode="numeric"
+                <input type="number" name="heart_rate" id="heart_rate" inputmode="numeric" min="30" max="250"
+                       oninput="updateGrade()"
                        class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
+            </div>
+        </div>
+
+        <!-- 实时分级显示 -->
+        <div id="grade-display" class="hidden bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-slate-500">血压分级</p>
+                    <p class="text-lg font-bold" id="bp-grade">-</p>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">心率状态</p>
+                    <p class="text-lg font-bold" id="hr-grade">-</p>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">预警</p>
+                    <p class="text-lg font-bold" id="alert-status">-</p>
+                </div>
             </div>
         </div>
 
@@ -58,4 +79,37 @@
         </div>
     </form>
 </div>
+
+<script>
+async function updateGrade() {
+    const systolic = parseInt(document.getElementById('systolic').value);
+    const diastolic = parseInt(document.getElementById('diastolic').value);
+    const hr = parseInt(document.getElementById('heart_rate').value) || null;
+
+    const display = document.getElementById('grade-display');
+
+    if (!systolic || !diastolic) {
+        display.classList.add('hidden');
+        return;
+    }
+
+    display.classList.remove('hidden');
+
+    try {
+        const params = new URLSearchParams({systolic, diastolic});
+        if (hr) params.append('heart_rate', hr);
+
+        const resp = await fetch(`/api/cardiac/grade?${params}`);
+        const data = await resp.json();
+
+        document.getElementById('bp-grade').innerHTML = `<span class="text-${data.bp.color}-500">${data.bp.icon} ${data.bp.grade}</span>`;
+        document.getElementById('hr-grade').innerHTML = `<span class="text-${data.heart_rate.color}-500">${data.heart_rate.icon} ${data.heart_rate.grade}</span>`;
+        document.getElementById('alert-status').innerHTML = data.is_alert
+            ? '<span class="text-red-500">⚠️ 需要关注</span>'
+            : '<span class="text-green-500">✅ 正常</span>';
+    } catch (e) {
+        console.error('Grade fetch failed:', e);
+    }
+}
+</script>
 {% endblock %}
