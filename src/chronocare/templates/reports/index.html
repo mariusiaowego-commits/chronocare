@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% block title %}统计报表 - ChronoCare{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- 老人切换器 -->
+    <div class="mb-6 flex items-center gap-4">
+        <h1 class="text-2xl font-bold">📈 统计报表</h1>
+        <div class="flex gap-2 flex-wrap">
+            {% for p in persons %}
+            <a href="/reports?person_id={{ p.id }}"
+               class="px-4 py-2 rounded-full text-sm font-medium transition
+                  {{ 'bg-blue-600 text-white shadow-md' if selected and selected.id == p.id
+                     else 'bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700' }}">
+                {{ '👩' if p.gender == 'F' else '👨' if p.gender == 'M' else '👤' }} {{ p.name }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if selected %}
+    <!-- 统计卡片 -->
+    <div id="stats-cards" class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
+            <p class="text-sm text-slate-500">记录数</p>
+            <p class="text-2xl font-bold text-blue-600" id="stat-count">-</p>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
+            <p class="text-sm text-slate-500">平均血糖</p>
+            <p class="text-2xl font-bold" id="stat-avg">-</p>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
+            <p class="text-sm text-slate-500">最低值</p>
+            <p class="text-2xl font-bold text-green-600" id="stat-min">-</p>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
+            <p class="text-sm text-slate-500">最高值</p>
+            <p class="text-2xl font-bold text-red-600" id="stat-max">-</p>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
+            <p class="text-sm text-slate-500">预警次数</p>
+            <p class="text-2xl font-bold text-yellow-600" id="stat-alerts">-</p>
+        </div>
+    </div>
+
+    <!-- 时间范围选择 -->
+    <div class="mb-4 flex items-center gap-4">
+        <label class="text-sm text-slate-600">时间范围:</label>
+        <select id="days-select" onchange="loadCharts()" class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm">
+            <option value="7">最近 7 天</option>
+            <option value="30" selected>最近 30 天</option>
+            <option value="90">最近 90 天</option>
+            <option value="365">最近 1 年</option>
+        </select>
+    </div>
+
+    <!-- 图表区域 -->
+    <div class="grid gap-6 lg:grid-cols-2 mb-6">
+        <!-- 血糖趋势图 -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+            <h3 class="font-semibold mb-4">🩸 血糖趋势</h3>
+            <div class="relative" style="height: 300px;">
+                <canvas id="bsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 血压趋势图 -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+            <h3 class="font-semibold mb-4">❤️ 血压趋势</h3>
+            <div class="relative" style="height: 300px;">
+                <canvas id="bpChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导出按钮 -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+        <h3 class="font-semibold mb-4">📥 数据导出</h3>
+        <div class="flex gap-3">
+            <a href="/api/reports/export/blood-sugar?person_id={{ selected.id }}"
+               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm">
+                导出血糖记录 (CSV)
+            </a>
+            <a href="/api/reports/export/health-report?person_id={{ selected.id }}"
+               class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm">
+                导出完整健康报告 (CSV)
+            </a>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-16 text-slate-500">
+        <p class="text-5xl mb-4">👤</p>
+        <p class="text-lg">请先选择一位老人</p>
+    </div>
+    {% endif %}
+</div>
+
+{% if selected %}
+<script>
+const PERSON_ID = {{ selected.id }};
+let bsChart = null;
+let bpChart = null;
+
+async function loadCharts() {
+    const days = document.getElementById('days-select').value;
+
+    // Load blood sugar trend
+    const bsResp = await fetch(`/api/reports/blood-sugar-trend?person_id=${PERSON_ID}&days=${days}`);
+    const bsData = await bsResp.json();
+
+    // Load BP trend
+    const bpResp = await fetch(`/api/reports/bp-trend?person_id=${PERSON_ID}&days=${days}`);
+    const bpData = await bpResp.json();
+
+    // Load stats
+    const statsResp = await fetch(`/api/reports/blood-sugar-stats?person_id=${PERSON_ID}&days=${days}`);
+    const stats = await statsResp.json();
+
+    // Update stats cards
+    document.getElementById('stat-count').textContent = stats.count;
+    document.getElementById('stat-avg').textContent = stats.avg ?? '-';
+    document.getElementById('stat-avg').className = `text-2xl font-bold ${stats.avg > 7.8 ? 'text-red-600' : stats.avg > 6.1 ? 'text-yellow-600' : 'text-green-600'}`;
+    document.getElementById('stat-min').textContent = stats.min ?? '-';
+    document.getElementById('stat-max').textContent = stats.max ?? '-';
+    document.getElementById('stat-alerts').textContent = stats.alert_count;
+
+    // Render blood sugar chart
+    const bsCtx = document.getElementById('bsChart').getContext('2d');
+    if (bsChart) bsChart.destroy();
+    bsChart = new Chart(bsCtx, {
+        type: 'line',
+        data: {
+            labels: bsData.labels,
+            datasets: [{
+                label: '血糖 (mmol/L)',
+                data: bsData.values,
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: bsData.alerts.map(a => a ? 'rgb(239, 68, 68)' : 'rgb(59, 130, 246)'),
+                pointRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                annotation: {
+                    annotations: {
+                        highLine: {
+                            type: 'line',
+                            yMin: 7.8,
+                            yMax: 7.8,
+                            borderColor: 'rgba(234, 179, 8, 0.5)',
+                            borderWidth: 2,
+                            borderDash: [6, 6],
+                            label: { display: true, content: '偏高 7.8', position: 'end' }
+                        },
+                        dangerLine: {
+                            type: 'line',
+                            yMin: 11.1,
+                            yMax: 11.1,
+                            borderColor: 'rgba(239, 68, 68, 0.5)',
+                            borderWidth: 2,
+                            borderDash: [6, 6],
+                            label: { display: true, content: '高 11.1', position: 'end' }
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    title: { display: true, text: 'mmol/L' }
+                }
+            }
+        }
+    });
+
+    // Render BP chart
+    const bpCtx = document.getElementById('bpChart').getContext('2d');
+    if (bpChart) bpChart.destroy();
+    bpChart = new Chart(bpCtx, {
+        type: 'line',
+        data: {
+            labels: bpData.labels,
+            datasets: [
+                {
+                    label: '收缩压',
+                    data: bpData.systolic,
+                    borderColor: 'rgb(239, 68, 68)',
+                    tension: 0.3,
+                    pointRadius: 3,
+                },
+                {
+                    label: '舒张压',
+                    data: bpData.diastolic,
+                    borderColor: 'rgb(59, 130, 246)',
+                    tension: 0.3,
+                    pointRadius: 3,
+                },
+                {
+                    label: '心率',
+                    data: bpData.heart_rate,
+                    borderColor: 'rgb(34, 197, 94)',
+                    tension: 0.3,
+                    pointRadius: 3,
+                    borderDash: [5, 5],
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    title: { display: true, text: 'mmHg / bpm' }
+                }
+            }
+        }
+    });
+}
+
+// Initial load
+loadCharts();
+</script>
+{% endif %}
+{% endblock %}

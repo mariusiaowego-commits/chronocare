@@ -14,6 +14,9 @@ from chronocare.routers.api.medication import router as api_med_router
 from chronocare.routers.api.visit import router as api_visit_router
 from chronocare.routers.api.wiki import router as api_wiki_router
 from chronocare.routers.api.news import router as api_news_router
+from chronocare.routers.api.reports import router as api_reports_router
+from chronocare.routers.api.admin import router as api_admin_router
+from chronocare.routers.api.medication_reminder import router as api_med_reminder_router
 
 # Page routers
 from chronocare.routers.pages.dashboard import router as pages_dashboard_router
@@ -24,6 +27,8 @@ from chronocare.routers.pages.medication import router as pages_med_router
 from chronocare.routers.pages.visit import router as pages_visit_router
 from chronocare.routers.pages.wiki import router as pages_wiki_router
 from chronocare.routers.pages.news import router as pages_news_router
+from chronocare.routers.pages.reports import router as pages_reports_router
+from chronocare.routers.pages.medication_reminder import router as pages_med_reminder_router
 
 app = FastAPI(title="ChronoCare", description="老年父母健康管理平台", version="0.2.0")
 
@@ -46,6 +51,9 @@ app.include_router(api_med_router)
 app.include_router(api_visit_router)
 app.include_router(api_wiki_router)
 app.include_router(api_news_router)
+app.include_router(api_reports_router)
+app.include_router(api_admin_router)
+app.include_router(api_med_reminder_router)
 
 # Register page routers
 app.include_router(pages_dashboard_router)
@@ -56,6 +64,8 @@ app.include_router(pages_med_router)
 app.include_router(pages_visit_router)
 app.include_router(pages_wiki_router)
 app.include_router(pages_news_router)
+app.include_router(pages_reports_router)
+app.include_router(pages_med_reminder_router)
 
 
 @app.get("/")
