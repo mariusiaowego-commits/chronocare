@@ -19,34 +19,10 @@
     </div>
 
     {% if selected %}
-    <!-- 统计卡片 -->
-    <div id="stats-cards" class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
-            <p class="text-sm text-slate-500">记录数</p>
-            <p class="text-2xl font-bold text-blue-600" id="stat-count">-</p>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
-            <p class="text-sm text-slate-500">平均血糖</p>
-            <p class="text-2xl font-bold" id="stat-avg">-</p>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
-            <p class="text-sm text-slate-500">最低值</p>
-            <p class="text-2xl font-bold text-green-600" id="stat-min">-</p>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
-            <p class="text-sm text-slate-500">最高值</p>
-            <p class="text-2xl font-bold text-red-600" id="stat-max">-</p>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
-            <p class="text-sm text-slate-500">预警次数</p>
-            <p class="text-2xl font-bold text-yellow-600" id="stat-alerts">-</p>
-        </div>
-    </div>
-
     <!-- 时间范围选择 -->
     <div class="mb-4 flex items-center gap-4">
         <label class="text-sm text-slate-600">时间范围:</label>
-        <select id="days-select" onchange="loadCharts()" class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm">
+        <select id="days-select" onchange="loadAll()" class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm">
             <option value="7">最近 7 天</option>
             <option value="30" selected>最近 30 天</option>
             <option value="90">最近 90 天</option>
@@ -54,7 +30,52 @@
         </select>
     </div>
 
-    <!-- 图表区域 -->
+    <!-- 血糖统计卡片 -->
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
+            <p class="text-sm text-slate-500">血糖记录</p>
+            <p class="text-2xl font-bold text-blue-600 id="bs-count">-</p>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
+            <p class="text-sm text-slate-500">平均血糖</p>
+            <p class="text-2xl font-bold" id="bs-avg">-</p>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
+            <p class="text-sm text-slate-500">血糖范围</p>
+            <p class="text-lg font-bold" id="bs-range">-</p>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
+            <p class="text-sm text-slate-500">血压记录</p>
+            <p class="text-2xl font-bold text-red-600" id="bp-count">-</p>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
+            <p class="text-sm text-slate-500">平均血压</p>
+            <p class="text-lg font-bold" id="bp-avg">-</p>
+        </div>
+    </div>
+
+    <!-- 周对比 -->
+    <div id="weekly-comparison" class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-5 mb-6 text-white hidden">
+        <h3 class="font-semibold mb-3">📊 本周 vs 上周</h3>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <p class="text-sm opacity-80">血糖平均</p>
+                <div class="flex items-center gap-2">
+                    <span class="text-xl font-bold" id="wc-bs-this">-</span>
+                    <span class="text-sm" id="wc-bs-change">-</span>
+                </div>
+            </div>
+            <div>
+                <p class="text-sm opacity-80">血压平均</p>
+                <div class="flex items-center gap-2">
+                    <span class="text-xl font-bold" id="wc-bp-this">-</span>
+                    <span class="text-sm" id="wc-bp-change">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图表区域 - 第一行 -->
     <div class="grid gap-6 lg:grid-cols-2 mb-6">
         <!-- 血糖趋势图 -->
         <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
@@ -73,10 +94,37 @@
         </div>
     </div>
 
+    <!-- 图表区域 - 第二行 -->
+    <div class="grid gap-6 lg:grid-cols-2 mb-6">
+        <!-- 血糖分布 -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+            <h3 class="font-semibold mb-4">📊 血糖分布</h3>
+            <div class="relative" style="height: 300px;">
+                <canvas id="bsDistChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 血压分布 -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+            <h3 class="font-semibold mb-4">📊 血压分级分布</h3>
+            <div class="relative" style="height: 300px;">
+                <canvas id="bpDistChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 血糖按测量时机分析 -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 mb-6">
+        <h3 class="font-semibold mb-4">⏰ 血糖按测量时机分析</h3>
+        <div id="context-analysis" class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <p class="text-slate-400 col-span-full text-center">加载中...</p>
+        </div>
+    </div>
+
     <!-- 导出按钮 -->
     <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
         <h3 class="font-semibold mb-4">📥 数据导出</h3>
-        <div class="flex gap-3">
+        <div class="flex gap-3 flex-wrap">
             <a href="/api/reports/export/blood-sugar?person_id={{ selected.id }}"
                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm">
                 导出血糖记录 (CSV)
@@ -84,6 +132,10 @@
             <a href="/api/reports/export/health-report?person_id={{ selected.id }}"
                class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm">
                 导出完整健康报告 (CSV)
+            </a>
+            <a href="/api/cardiac/export?person_id={{ selected.id }}"
+               class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm">
+                导出血压记录 (CSV)
             </a>
         </div>
     </div>
@@ -96,35 +148,43 @@
 </div>
 
 {% if selected %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 const PERSON_ID = {{ selected.id }};
-let bsChart = null;
-let bpChart = null;
+let bsChart, bpChart, bsDistChart, bpDistChart;
 
-async function loadCharts() {
+async function loadAll() {
     const days = document.getElementById('days-select').value;
+    await Promise.all([
+        loadStats(days),
+        loadCharts(days),
+        loadDistributions(days),
+        loadContextAnalysis(days),
+        loadWeeklyComparison(),
+    ]);
+}
 
-    // Load blood sugar trend
+async function loadStats(days) {
+    // Blood sugar stats
+    const bsResp = await fetch(`/api/reports/blood-sugar-stats?person_id=${PERSON_ID}&days=${days}`);
+    const bs = await bsResp.json();
+    document.getElementById('bs-count').textContent = bs.count;
+    document.getElementById('bs-avg').textContent = bs.avg ?? '-';
+    document.getElementById('bs-avg').className = `text-2xl font-bold ${bs.avg > 7.8 ? 'text-red-600' : bs.avg > 6.1 ? 'text-yellow-600' : 'text-green-600'}`;
+    document.getElementById('bs-range').textContent = bs.min ? `${bs.min}-${bs.max}` : '-';
+
+    // BP stats
+    const bpResp = await fetch(`/api/reports/bp-stats?person_id=${PERSON_ID}&days=${days}`);
+    const bp = await bpResp.json();
+    document.getElementById('bp-count').textContent = bp.count;
+    document.getElementById('bp-avg').textContent = bp.avg_systolic ? `${bp.avg_systolic}/${bp.avg_diastolic}` : '-';
+}
+
+async function loadCharts(days) {
+    // Blood sugar trend
     const bsResp = await fetch(`/api/reports/blood-sugar-trend?person_id=${PERSON_ID}&days=${days}`);
     const bsData = await bsResp.json();
 
-    // Load BP trend
-    const bpResp = await fetch(`/api/reports/bp-trend?person_id=${PERSON_ID}&days=${days}`);
-    const bpData = await bpResp.json();
-
-    // Load stats
-    const statsResp = await fetch(`/api/reports/blood-sugar-stats?person_id=${PERSON_ID}&days=${days}`);
-    const stats = await statsResp.json();
-
-    // Update stats cards
-    document.getElementById('stat-count').textContent = stats.count;
-    document.getElementById('stat-avg').textContent = stats.avg ?? '-';
-    document.getElementById('stat-avg').className = `text-2xl font-bold ${stats.avg > 7.8 ? 'text-red-600' : stats.avg > 6.1 ? 'text-yellow-600' : 'text-green-600'}`;
-    document.getElementById('stat-min').textContent = stats.min ?? '-';
-    document.getElementById('stat-max').textContent = stats.max ?? '-';
-    document.getElementById('stat-alerts').textContent = stats.alert_count;
-
-    // Render blood sugar chart
     const bsCtx = document.getElementById('bsChart').getContext('2d');
     if (bsChart) bsChart.destroy();
     bsChart = new Chart(bsCtx, {
@@ -145,41 +205,15 @@ async function loadCharts() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                annotation: {
-                    annotations: {
-                        highLine: {
-                            type: 'line',
-                            yMin: 7.8,
-                            yMax: 7.8,
-                            borderColor: 'rgba(234, 179, 8, 0.5)',
-                            borderWidth: 2,
-                            borderDash: [6, 6],
-                            label: { display: true, content: '偏高 7.8', position: 'end' }
-                        },
-                        dangerLine: {
-                            type: 'line',
-                            yMin: 11.1,
-                            yMax: 11.1,
-                            borderColor: 'rgba(239, 68, 68, 0.5)',
-                            borderWidth: 2,
-                            borderDash: [6, 6],
-                            label: { display: true, content: '高 11.1', position: 'end' }
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: false,
-                    title: { display: true, text: 'mmol/L' }
-                }
-            }
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: false, title: { display: true, text: 'mmol/L' } } }
         }
     });
 
-    // Render BP chart
+    // BP trend
+    const bpResp = await fetch(`/api/reports/bp-trend?person_id=${PERSON_ID}&days=${days}`);
+    const bpData = await bpResp.json();
+
     const bpCtx = document.getElementById('bpChart').getContext('2d');
     if (bpChart) bpChart.destroy();
     bpChart = new Chart(bpCtx, {
@@ -187,45 +221,119 @@ async function loadCharts() {
         data: {
             labels: bpData.labels,
             datasets: [
-                {
-                    label: '收缩压',
-                    data: bpData.systolic,
-                    borderColor: 'rgb(239, 68, 68)',
-                    tension: 0.3,
-                    pointRadius: 3,
-                },
-                {
-                    label: '舒张压',
-                    data: bpData.diastolic,
-                    borderColor: 'rgb(59, 130, 246)',
-                    tension: 0.3,
-                    pointRadius: 3,
-                },
-                {
-                    label: '心率',
-                    data: bpData.heart_rate,
-                    borderColor: 'rgb(34, 197, 94)',
-                    tension: 0.3,
-                    pointRadius: 3,
-                    borderDash: [5, 5],
-                }
+                { label: '收缩压', data: bpData.systolic, borderColor: 'rgb(239, 68, 68)', tension: 0.3, pointRadius: 3 },
+                { label: '舒张压', data: bpData.diastolic, borderColor: 'rgb(59, 130, 246)', tension: 0.3, pointRadius: 3 },
+                { label: '心率', data: bpData.heart_rate, borderColor: 'rgb(34, 197, 94)', tension: 0.3, pointRadius: 3, borderDash: [5, 5] }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: false,
-                    title: { display: true, text: 'mmHg / bpm' }
-                }
+            scales: { y: { beginAtZero: false, title: { display: true, text: 'mmHg / bpm' } } }
+        }
+    });
+}
+
+async function loadDistributions(days) {
+    // Blood sugar distribution
+    const bsDistResp = await fetch(`/api/reports/blood-sugar-distribution?person_id=${PERSON_ID}&days=${days}`);
+    const bsDist = await bsDistResp.json();
+
+    const bsDistCtx = document.getElementById('bsDistChart').getContext('2d');
+    if (bsDistChart) bsDistChart.destroy();
+    bsDistChart = new Chart(bsDistCtx, {
+        type: 'doughnut',
+        data: {
+            labels: bsDist.labels,
+            datasets: [{
+                data: bsDist.values,
+                backgroundColor: bsDist.colors,
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' },
+            }
+        }
+    });
+
+    // BP distribution
+    const bpDistResp = await fetch(`/api/reports/bp-distribution?person_id=${PERSON_ID}&days=${days}`);
+    const bpDist = await bpDistResp.json();
+
+    const bpDistCtx = document.getElementById('bpDistChart').getContext('2d');
+    if (bpDistChart) bpDistChart.destroy();
+    bpDistChart = new Chart(bpDistCtx, {
+        type: 'doughnut',
+        data: {
+            labels: bpDist.labels,
+            datasets: [{
+                data: bpDist.values,
+                backgroundColor: bpDist.colors,
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' },
             }
         }
     });
 }
 
+async function loadContextAnalysis(days) {
+    const resp = await fetch(`/api/reports/blood-sugar-by-context?person_id=${PERSON_ID}&days=${days}`);
+    const data = await resp.json();
+
+    const container = document.getElementById('context-analysis');
+    if (data.length === 0) {
+        container.innerHTML = '<p class="text-slate-400 col-span-full text-center">暂无数据</p>';
+        return;
+    }
+
+    container.innerHTML = data.map(item => `
+        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-center">
+            <p class="text-sm text-slate-500">${item.context}</p>
+            <p class="text-xl font-bold ${item.avg > 7.8 ? 'text-red-600' : item.avg > 6.1 ? 'text-yellow-600' : 'text-green-600'}">${item.avg ?? '-'}</p>
+            <p class="text-xs text-slate-400">${item.count} 次</p>
+        </div>
+    `).join('');
+}
+
+async function loadWeeklyComparison() {
+    const resp = await fetch(`/api/reports/weekly-comparison?person_id=${PERSON_ID}`);
+    const data = await resp.json();
+
+    const section = document.getElementById('weekly-comparison');
+    section.classList.remove('hidden');
+
+    // Blood sugar
+    const bs = data.blood_sugar;
+    document.getElementById('wc-bs-this').textContent = bs.this_week ? `${bs.this_week} mmol/L` : '-';
+    if (bs.change !== null) {
+        const changeEl = document.getElementById('wc-bs-change');
+        changeEl.textContent = `${bs.change > 0 ? '+' : ''}${bs.change}`;
+        changeEl.className = `text-sm ${bs.change > 0 ? 'text-red-300' : 'text-green-300'}`;
+    }
+
+    // Blood pressure
+    const bp = data.blood_pressure;
+    document.getElementById('wc-bp-this').textContent = bp.this_week.systolic ? `${bp.this_week.systolic}/${bp.this_week.diastolic}` : '-';
+    if (bp.last_week.systolic && bp.this_week.systolic) {
+        const sysChange = Math.round((bp.this_week.systolic - bp.last_week.systolic) * 10) / 10;
+        const changeEl = document.getElementById('wc-bp-change');
+        changeEl.textContent = `${sysChange > 0 ? '+' : ''}${sysChange}`;
+        changeEl.className = `text-sm ${sysChange > 0 ? 'text-red-300' : 'text-green-300'}`;
+    }
+}
+
 // Initial load
-loadCharts();
+loadAll();
 </script>
 {% endif %}
 {% endblock %}
