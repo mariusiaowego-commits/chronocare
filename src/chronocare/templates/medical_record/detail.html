@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}就医记录详情 - ChronoCare{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <h1>📋 就医记录详情</h1>
+        <div class="actions">
+            <a href="/medical-records/{{ record.id }}/edit" class="btn">编辑</a>
+            <form method="post" action="/medical-records/{{ record.id }}/delete" style="display:inline">
+                <button type="submit" class="btn btn-danger" onclick="return confirm('确定删除？')">删除</button>
+            </form>
+            <a href="/medical-records" class="btn">返回列表</a>
+        </div>
+    </div>
+
+    <div class="detail-card">
+        <div class="info-grid">
+            <div class="info-item">
+                <label>记录类型</label>
+                <span class="badge-{{ record.record_type }}">
+                    {% if record.record_type == 'medical_record' %}就医记录
+                    {% elif record.record_type == 'lab_report' %}化验报告
+                    {% elif record.record_type == 'prescription' %}处方
+                    {% elif record.record_type == 'doctor_order' %}医嘱
+                    {% endif %}
+                </span>
+            </div>
+            <div class="info-item">
+                <label>就诊日期</label>
+                <span>{{ record.visit_date or '未填写' }}</span>
+            </div>
+            <div class="info-item">
+                <label>医院</label>
+                <span>{{ record.hospital or '未填写' }}</span>
+            </div>
+            <div class="info-item">
+                <label>科室</label>
+                <span>{{ record.department or '未填写' }}</span>
+            </div>
+            <div class="info-item">
+                <label>医生</label>
+                <span>{{ record.doctor or '未填写' }}</span>
+            </div>
+            {% if record.notes %}
+            <div class="info-item full-width">
+                <label>备注</label>
+                <span>{{ record.notes }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 图片上传 -->
+    <div class="section">
+        <h2>📷 图片上传</h2>
+        {% if record.image_path %}
+        <div class="image-preview">
+            <p>已上传图片: {{ record.image_path }}</p>
+        </div>
+        {% else %}
+        <form method="post" action="/medical-records/{{ record.id }}/upload" enctype="multipart/form-data">
+            <input type="file" name="file" accept="image/*" required>
+            <button type="submit" class="btn">上传图片</button>
+        </form>
+        {% endif %}
+    </div>
+
+    <!-- OCR处理 -->
+    {% if record.image_path %}
+    <div class="section">
+        <h2>🔍 OCR识别</h2>
+        <div class="ocr-actions">
+            <form method="post" action="/medical-records/{{ record.id }}/ocr" style="display:inline">
+                <button type="submit" class="btn">通用OCR识别</button>
+            </form>
+            <form method="post" action="/medical-records/{{ record.id }}/process-lab" style="display:inline">
+                <button type="submit" class="btn">识别化验单</button>
+            </form>
+            <form method="post" action="/medical-records/{{ record.id }}/process-order" style="display:inline">
+                <button type="submit" class="btn">识别医嘱</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- OCR结果 -->
+    {% if record.ocr_text %}
+    <div class="section">
+        <h2>📝 OCR识别文本</h2>
+        <pre class="ocr-text">{{ record.ocr_text }}</pre>
+    </div>
+    {% endif %}
+
+    <!-- 结构化数据 -->
+    {% if record.structured_data %}
+    <div class="section">
+        <h2>📊 结构化数据</h2>
+        <pre class="json-data">{{ record.structured_data | tojson(indent=2) }}</pre>
+    </div>
+    {% endif %}
+
+    <!-- 医嘱 -->
+    {% if record.doctor_orders %}
+    <div class="section">
+        <h2>💊 医嘱</h2>
+        <div class="doctor-orders">
+            {% if record.doctor_orders.medications %}
+            <h3>用药</h3>
+            <table>
+                <thead>
+                    <tr><th>药品</th><th>剂量</th><th>频率</th><th>疗程</th><th>备注</th></tr>
+                </thead>
+                <tbody>
+                    {% for med in record.doctor_orders.medications %}
+                    <tr>
+                        <td>{{ med.name }}</td>
+                        <td>{{ med.dosage }}</td>
+                        <td>{{ med.frequency }}</td>
+                        <td>{{ med.duration }}</td>
+                        <td>{{ med.notes or '' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+            {% if record.doctor_orders.lifestyle %}
+            <h3>生活建议</h3>
+            <ul>
+                {% for item in record.doctor_orders.lifestyle %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% if record.doctor_orders.followup %}
+            <h3>复诊安排</h3>
+            <p>{{ record.doctor_orders.followup }}</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 化验结果 -->
+    {% if record.lab_results %}
+    <div class="section">
+        <h2>🧪 化验结果</h2>
+        {% if record.lab_results.tests %}
+        <table>
+            <thead>
+                <tr><th>项目</th><th>结果</th><th>单位</th><th>参考范围</th><th>状态</th></tr>
+            </thead>
+            <tbody>
+                {% for test in record.lab_results.tests %}
+                <tr class="{{ 'abnormal' if test.status != 'normal' else '' }}">
+                    <td>{{ test.name }}</td>
+                    <td>{{ test.value }}</td>
+                    <td>{{ test.unit }}</td>
+                    <td>{{ test.reference }}</td>
+                    <td>
+                        {% if test.status == 'normal' %}正常
+                        {% elif test.status == 'slightly_high' %}偏高
+                        {% elif test.status == 'slightly_low' %}偏低
+                        {% elif test.status == 'high' %}高
+                        {% elif test.status == 'low' %}低
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        {% if record.lab_results.summary %}
+        <p class="summary"><strong>总结:</strong> {{ record.lab_results.summary }}</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.actions { display: flex; gap: 8px; }
+.detail-card { background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.info-item label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
+.info-item span { font-size: 16px; }
+.full-width { grid-column: 1 / -1; }
+.section { background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+.section h2 { margin-top: 0; }
+.badge-medical_record { background: #e3f2fd; color: #1565c0; padding: 4px 8px; border-radius: 4px; }
+.badge-lab_report { background: #f3e5f5; color: #7b1fa2; padding: 4px 8px; border-radius: 4px; }
+.badge-prescription { background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; }
+.badge-doctor_order { background: #fff3e0; color: #ef6c00; padding: 4px 8px; border-radius: 4px; }
+.btn { padding: 8px 16px; border-radius: 4px; text-decoration: none; display: inline-block; cursor: pointer; border: 1px solid #ddd; background: white; }
+.btn-danger { color: #d32f2f; border-color: #d32f2f; }
+.ocr-text { background: #f5f5f5; padding: 12px; border-radius: 4px; white-space: pre-wrap; }
+.json-data { background: #f5f5f5; padding: 12px; border-radius: 4px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+th { background: #f5f5f5; }
+tr.abnormal { background: #fff3e0; }
+.summary { margin-top: 16px; padding: 12px; background: #e3f2fd; border-radius: 4px; }
+.ocr-actions { display: flex; gap: 8px; }
+</style>
+{% endblock %}
