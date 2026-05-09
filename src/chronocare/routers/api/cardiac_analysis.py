@@ -1,6 +1,8 @@
 """Cardiac Analysis API — BP grading, statistics, alerts."""
 
-from datetime import datetime
+
+import csv
+import io
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
@@ -10,16 +12,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from chronocare.database import get_db
 from chronocare.models.cardiac import BloodPressureRecord
 from chronocare.services.cardiac_analysis import (
-    grade_bp,
-    grade_heart_rate,
     get_bp_alerts,
     get_bp_comparison,
     get_bp_stats,
+    grade_bp,
+    grade_heart_rate,
     should_alert,
 )
-
-import csv
-import io
 
 router = APIRouter(prefix="/api/cardiac", tags=["cardiac-api"])
 

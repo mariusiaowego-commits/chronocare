@@ -4,7 +4,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-
 # ── WikiCategory ──────────────────────────────────────────────
 
 class WikiCategoryCreate(BaseModel):

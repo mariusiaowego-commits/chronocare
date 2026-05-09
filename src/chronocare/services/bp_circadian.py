@@ -2,7 +2,7 @@
 
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chronocare.models.cardiac import BloodPressureRecord
@@ -209,6 +209,8 @@ def _interpret_circadian(pattern: dict, morning_surge: dict | None, day_stats: d
     # Day/Night comparison
     if day_stats["count"] > 0 and night_stats["count"] > 0:
         notes.append(f"日间平均 {day_stats['systolic_avg']}/{day_stats['diastolic_avg']} mmHg ({day_stats['count']}次)")
-        notes.append(f"夜间平均 {night_stats['systolic_avg']}/{night_stats['diastolic_avg']} mmHg ({night_stats['count']}次)")
+        notes.append(
+            f"夜间平均 {night_stats['systolic_avg']}/{night_stats['diastolic_avg']} mmHg ({night_stats['count']}次)"
+        )
 
     return notes

@@ -2,7 +2,7 @@
 
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chronocare.models.medication import MedicationLog, MedicationPlan
@@ -20,7 +20,7 @@ async def analyze_medication_adherence(
     plans_stmt = (
         select(MedicationPlan)
         .where(MedicationPlan.person_id == person_id)
-        .where(MedicationPlan.is_active == True)
+        .where(MedicationPlan.is_active)
     )
     plans_result = await db.execute(plans_stmt)
     plans = plans_result.scalars().all()

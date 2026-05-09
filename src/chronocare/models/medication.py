@@ -2,7 +2,7 @@
 
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, CheckConstraint, ForeignKey, JSON, Text, func
+from sqlalchemy import JSON, Boolean, CheckConstraint, ForeignKey, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from chronocare.models.base import Base
@@ -42,7 +42,7 @@ class MedicationPlan(Base):
     notes: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
-    medication: Mapped["Medication"] = relationship("Medication", lazy="selectin")
+    medication: Mapped[Medication] = relationship("Medication", lazy="selectin")
 
 
 class MedicationLog(Base):

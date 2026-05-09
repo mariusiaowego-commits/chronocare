@@ -7,15 +7,14 @@ from jinja2 import Environment, FileSystemLoader
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from chronocare.models.person import Person
 from chronocare.models.blood_sugar import BloodSugarRecord
 from chronocare.models.cardiac import BloodPressureRecord
-from chronocare.models.medication import MedicationPlan, MedicationLog
+from chronocare.models.medication import MedicationLog
+from chronocare.models.person import Person
 from chronocare.models.visit import Visit
+from chronocare.services.bs_variability import analyze_blood_sugar_variability
 from chronocare.services.health_profile import get_health_overview
 from chronocare.services.trend_alert import get_all_alerts
-from chronocare.services.bs_variability import analyze_blood_sugar_variability
-
 
 # Templates directory
 TEMPLATES_DIR = Path(__file__).parent.parent / "templates" / "pdf"

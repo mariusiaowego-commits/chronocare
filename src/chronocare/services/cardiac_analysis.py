@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from chronocare.models.cardiac import BloodPressureRecord
 
-
 # WHO/中国高血压分级标准
 BP_GRADES = [
     # (name, systolic_max, diastolic_max, color, icon)
@@ -123,7 +122,7 @@ async def get_bp_alerts(db: AsyncSession, person_id: int, limit: int = 5) -> lis
     stmt = (
         select(BloodPressureRecord)
         .where(BloodPressureRecord.person_id == person_id)
-        .where(BloodPressureRecord.is_alert == True)
+        .where(BloodPressureRecord.is_alert)
         .order_by(BloodPressureRecord.measured_at.desc())
         .limit(limit)
     )

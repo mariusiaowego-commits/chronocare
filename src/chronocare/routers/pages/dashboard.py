@@ -1,5 +1,7 @@
 """Dashboard HTML pages."""
 
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -14,7 +16,8 @@ from chronocare.services.trend_alert import get_all_alerts
 from chronocare.services.visit import list_visits
 
 router = APIRouter(tags=["pages"])
-templates = Jinja2Templates(directory=str(__import__("pathlib").Path(__file__).resolve().parent.parent.parent / "templates"))
+_TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent / "templates"
+templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
@@ -34,7 +37,11 @@ async def dashboard(request: Request, person_id: int | None = Query(None), db: A
     bp_records = await list_bp(db, person_id) if person_id else []
     plans = await list_plans(db, person_id) if person_id else []
     visits = await list_visits(db, person_id) if person_id else []
-    alerts_data = await get_all_alerts(person_id, db) if person_id else {"alerts": [], "alert_count": 0, "has_critical": False}
+    alerts_data = (
+        await get_all_alerts(person_id, db)
+        if person_id
+        else {"alerts": [], "alert_count": 0, "has_critical": False}
+    )
 
     return templates.TemplateResponse(request, "dashboard.html", {
         "request": request,

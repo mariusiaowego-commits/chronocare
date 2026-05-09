@@ -79,7 +79,7 @@ async def get_health_overview(db: AsyncSession, person_id: int) -> dict:
         select(MedicationPlan)
         .options(selectinload(MedicationPlan.medication))
         .where(MedicationPlan.person_id == person_id)
-        .where(MedicationPlan.is_active == True)
+        .where(MedicationPlan.is_active)
     )
     med_result = await db.execute(med_stmt)
     active_meds = med_result.scalars().all()

@@ -11,7 +11,6 @@ from chronocare.schemas.wiki import (
     WikiCategoryUpdate,
 )
 
-
 # ── Category CRUD ─────────────────────────────────────────────
 
 async def create_category(db: AsyncSession, data: WikiCategoryCreate) -> WikiCategory:

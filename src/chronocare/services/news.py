@@ -11,7 +11,6 @@ from chronocare.schemas.news import (
     RssFeedUpdate,
 )
 
-
 # ── NewsItem CRUD ─────────────────────────────────────────────
 
 async def create_news_item(db: AsyncSession, data: NewsItemCreate) -> NewsItem:

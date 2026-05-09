@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from chronocare.models.blood_sugar import BloodSugarRecord
 from chronocare.models.cardiac import BloodPressureRecord
-from chronocare.models.medication import Medication, MedicationPlan
+from chronocare.models.medication import MedicationPlan
 from chronocare.models.person import Person
 from chronocare.models.visit import Visit
 from chronocare.services.trend_alert import get_all_alerts
@@ -94,7 +94,7 @@ async def generate_weekly_report(
     plans_stmt = (
         select(MedicationPlan)
         .where(MedicationPlan.person_id == person_id)
-        .where(MedicationPlan.is_active == True)
+        .where(MedicationPlan.is_active)
     )
     plans_result = await db.execute(plans_stmt)
     plans = plans_result.scalars().all()
@@ -231,7 +231,7 @@ async def generate_monthly_report(
     plans_stmt = (
         select(MedicationPlan)
         .where(MedicationPlan.person_id == person_id)
-        .where(MedicationPlan.is_active == True)
+        .where(MedicationPlan.is_active)
     )
     plans_result = await db.execute(plans_stmt)
     plans = plans_result.scalars().all()

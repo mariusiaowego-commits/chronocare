@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, JSON, Text, func
+from sqlalchemy import JSON, Boolean, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from chronocare.models.base import Base
