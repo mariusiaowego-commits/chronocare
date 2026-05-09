@@ -136,4 +136,4 @@ uv run alembic upgrade head
 - STATUS.md — 项目根目录
 - DEV_PLAN.md — 项目根目录
 - vibe-coding-log/ — 项目根目录，按日期记录
-- wiki — **无**（未建立）
+- wiki — `hermes-base/projects/project-chronocare.md`
