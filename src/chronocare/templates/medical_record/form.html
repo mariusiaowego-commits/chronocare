@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}{% if record %}编辑就医记录{% else %}新增就医记录{% endif %} - ChronoCare{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>{% if record %}编辑就医记录{% else %}新增就医记录{% endif %}</h1>
+
+    <form method="post" action="{% if record %}/medical-records/{{ record.id }}/edit{% else %}/medical-records/new{% endif %}">
+        <div class="form-group">
+            <label for="person_id">人员 *</label>
+            <select name="person_id" id="person_id" required>
+                <option value="">请选择</option>
+                {% for person in persons %}
+                <option value="{{ person.id }}" {% if selected_person_id == person.id or (record and record.person_id == person.id) %}selected{% endif %}>
+                    {{ person.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="record_type">记录类型 *</label>
+            <select name="record_type" id="record_type" required>
+                <option value="medical_record" {% if record and record.record_type == 'medical_record' %}selected{% endif %}>就医记录</option>
+                <option value="lab_report" {% if record and record.record_type == 'lab_report' %}selected{% endif %}>化验报告</option>
+                <option value="prescription" {% if record and record.record_type == 'prescription' %}selected{% endif %}>处方</option>
+                <option value="doctor_order" {% if record and record.record_type == 'doctor_order' %}selected{% endif %}>医嘱</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="visit_date">就诊日期</label>
+            <input type="date" name="visit_date" id="visit_date" value="{{ record.visit_date if record else '' }}">
+        </div>
+
+        <div class="form-group">
+            <label for="hospital">医院</label>
+            <input type="text" name="hospital" id="hospital" value="{{ record.hospital if record else '' }}" placeholder="如：北京协和医院">
+        </div>
+
+        <div class="form-group">
+            <label for="department">科室</label>
+            <input type="text" name="department" id="department" value="{{ record.department if record else '' }}" placeholder="如：内分泌科">
+        </div>
+
+        <div class="form-group">
+            <label for="doctor">医生</label>
+            <input type="text" name="doctor" id="doctor" value="{{ record.doctor if record else '' }}" placeholder="如：张医生">
+        </div>
+
+        <div class="form-group">
+            <label for="notes">备注</label>
+            <textarea name="notes" id="notes" rows="4">{{ record.notes if record else '' }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">{% if record %}保存修改{% else %}创建记录{% endif %}</button>
+            <a href="/medical-records" class="btn">取消</a>
+        </div>
+    </form>
+</div>
+
+<style>
+.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; margin-bottom: 4px; font-weight: bold; }
+.form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;
+}
+.form-actions { margin-top: 24px; display: flex; gap: 12px; }
+.btn { padding: 8px 16px; border-radius: 4px; text-decoration: none; display: inline-block; cursor: pointer; }
+.btn-primary { background: #1976d2; color: white; border: none; }
+</style>
+{% endblock %}

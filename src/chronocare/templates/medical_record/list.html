@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}就医记录 - ChronoCare{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <h1>📋 就医记录</h1>
+        <a href="/medical-records/new{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}" class="btn btn-primary">+ 新增记录</a>
+    </div>
+
+    <div class="filters">
+        <form method="get" action="/medical-records">
+            <select name="person_id" onchange="this.form.submit()">
+                <option value="">全部人员</option>
+                {% for person in persons %}
+                <option value="{{ person.id }}" {% if selected_person_id == person.id %}selected{% endif %}>
+                    {{ person.name }}
+                </option>
+                {% endfor %}
+            </select>
+            <select name="record_type" onchange="this.form.submit()">
+                <option value="">全部类型</option>
+                <option value="medical_record" {% if selected_record_type == 'medical_record' %}selected{% endif %}>就医记录</option>
+                <option value="lab_report" {% if selected_record_type == 'lab_report' %}selected{% endif %}>化验报告</option>
+                <option value="prescription" {% if selected_record_type == 'prescription' %}selected{% endif %}>处方</option>
+                <option value="doctor_order" {% if selected_record_type == 'doctor_order' %}selected{% endif %}>医嘱</option>
+            </select>
+        </form>
+    </div>
+
+    {% if records %}
+    <div class="record-list">
+        {% for record in records %}
+        <div class="record-card">
+            <div class="record-header">
+                <span class="record-type badge-{{ record.record_type }}">
+                    {% if record.record_type == 'medical_record' %}就医记录
+                    {% elif record.record_type == 'lab_report' %}化验报告
+                    {% elif record.record_type == 'prescription' %}处方
+                    {% elif record.record_type == 'doctor_order' %}医嘱
+                    {% endif %}
+                </span>
+                <span class="record-date">{{ record.visit_date or '未填写日期' }}</span>
+            </div>
+            <div class="record-body">
+                <p><strong>医院:</strong> {{ record.hospital or '未填写' }}</p>
+                <p><strong>科室:</strong> {{ record.department or '未填写' }}</p>
+                <p><strong>医生:</strong> {{ record.doctor or '未填写' }}</p>
+                {% if record.notes %}
+                <p><strong>备注:</strong> {{ record.notes[:100] }}{% if record.notes|length > 100 %}...{% endif %}</p>
+                {% endif %}
+            </div>
+            <div class="record-actions">
+                <a href="/medical-records/{{ record.id }}" class="btn btn-sm">查看详情</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>暂无就医记录</p>
+        <a href="/medical-records/new{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}" class="btn btn-primary">添加第一条记录</a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.filters { margin-bottom: 20px; display: flex; gap: 10px; }
+.filters select { padding: 8px; border-radius: 4px; border: 1px solid #ddd; }
+.record-list { display: grid; gap: 16px; }
+.record-card { background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; }
+.record-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.record-type { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+.badge-medical_record { background: #e3f2fd; color: #1565c0; }
+.badge-lab_report { background: #f3e5f5; color: #7b1fa2; }
+.badge-prescription { background: #e8f5e9; color: #2e7d32; }
+.badge-doctor_order { background: #fff3e0; color: #ef6c00; }
+.record-date { color: #666; font-size: 14px; }
+.record-body p { margin: 4px 0; }
+.record-actions { margin-top: 12px; }
+.btn { padding: 8px 16px; border-radius: 4px; text-decoration: none; display: inline-block; }
+.btn-primary { background: #1976d2; color: white; }
+.btn-sm { padding: 4px 12px; font-size: 12px; }
+.empty-state { text-align: center; padding: 40px; color: #666; }
+</style>
+{% endblock %}
