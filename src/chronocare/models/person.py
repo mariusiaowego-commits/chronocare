@@ -30,7 +30,7 @@ class Person(Base):
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    conditions: Mapped[list["Condition"]] = relationship(back_populates="person", cascade="all, delete-orphan")
+    conditions: Mapped[list[Condition]] = relationship(back_populates="person", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<Person(id={self.id}, name='{self.name}')>"
@@ -54,7 +54,7 @@ class Condition(Base):
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     # Relationships
-    person: Mapped["Person"] = relationship(back_populates="conditions")
+    person: Mapped[Person] = relationship(back_populates="conditions")
 
     def __repr__(self) -> str:
         return f"<Condition(id={self.id}, name='{self.name}')>"

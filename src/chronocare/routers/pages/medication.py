@@ -1,6 +1,7 @@
 """Medication HTML pages."""
 
-from datetime import date
+
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -13,7 +14,8 @@ from chronocare.services.medication import create_medication, create_plan, list_
 from chronocare.services.person import list_persons
 
 router = APIRouter(tags=["pages"])
-templates = Jinja2Templates(directory=str(__import__("pathlib").Path(__file__).resolve().parent.parent.parent / "templates"))
+_TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent / "templates"
+templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 
 
 @router.get("/medication", response_class=HTMLResponse)

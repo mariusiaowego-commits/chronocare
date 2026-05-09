@@ -67,7 +67,9 @@ async def api_list_articles(
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
 ):
-    return await wiki_svc.list_articles(db, category_id=category_id, is_recommended=is_recommended, limit=limit, offset=offset)
+    return await wiki_svc.list_articles(
+        db, category_id=category_id, is_recommended=is_recommended, limit=limit, offset=offset
+    )
 
 
 @router.get("/articles/search", response_model=list[WikiArticleRead])

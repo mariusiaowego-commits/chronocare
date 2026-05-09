@@ -7,7 +7,6 @@ from sqlalchemy.orm import selectinload
 from chronocare.models.person import Condition, Person
 from chronocare.schemas.person import ConditionCreate, PersonCreate, PersonUpdate
 
-
 # --- Person ---
 
 async def list_persons(db: AsyncSession) -> list[Person]:

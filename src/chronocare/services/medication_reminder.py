@@ -12,17 +12,16 @@ from chronocare.models.medication import MedicationLog, MedicationPlan
 async def get_due_reminders(db: AsyncSession, person_id: int) -> list[dict]:
     """Get medications that are due today but not yet taken."""
     today = date.today()
-    now = datetime.now()
 
     # Get active plans for this person
     stmt = (
         select(MedicationPlan)
         .options(selectinload(MedicationPlan.medication))
         .where(MedicationPlan.person_id == person_id)
-        .where(MedicationPlan.is_active == True)
+        .where(MedicationPlan.is_active)
         .where(MedicationPlan.start_date <= today)
         .where(
-            (MedicationPlan.end_date == None) | (MedicationPlan.end_date >= today)
+             (MedicationPlan.end_date.is_(None)) | (MedicationPlan.end_date >= today)
         )
     )
     result = await db.execute(stmt)

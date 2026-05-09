@@ -6,7 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from chronocare.database import get_db
 from chronocare.schemas.blood_sugar import BloodSugarCreate, BloodSugarRead, BloodSugarUpdate
 from chronocare.services.blood_sugar import (
-    create_blood_sugar, delete_blood_sugar, get_blood_sugar, list_blood_sugar, update_blood_sugar,
+    create_blood_sugar,
+    delete_blood_sugar,
+    get_blood_sugar,
+    list_blood_sugar,
+    update_blood_sugar,
 )
 
 router = APIRouter(prefix="/api/blood-sugar", tags=["blood-sugar"])

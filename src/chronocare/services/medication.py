@@ -6,10 +6,12 @@ from sqlalchemy.orm import selectinload
 
 from chronocare.models.medication import Medication, MedicationLog, MedicationPlan, Prescription
 from chronocare.schemas.medication import (
-    MedicationCreate, MedicationLogCreate, MedicationPlanCreate, MedicationPlanUpdate,
+    MedicationCreate,
+    MedicationLogCreate,
+    MedicationPlanCreate,
+    MedicationPlanUpdate,
     PrescriptionCreate,
 )
-
 
 # --- Medication ---
 
@@ -34,7 +36,11 @@ async def create_medication(db: AsyncSession, data: MedicationCreate) -> Medicat
 # --- Medication Plan ---
 
 async def list_plans(db: AsyncSession, person_id: int | None = None) -> list[MedicationPlan]:
-    stmt = select(MedicationPlan).options(selectinload(MedicationPlan.medication)).order_by(MedicationPlan.start_date.desc())
+    stmt = (
+        select(MedicationPlan)
+        .options(selectinload(MedicationPlan.medication))
+        .order_by(MedicationPlan.start_date.desc())
+    )
     if person_id is not None:
         stmt = stmt.where(MedicationPlan.person_id == person_id)
     result = await db.execute(stmt)

@@ -33,7 +33,9 @@ async def api_list_news_items(
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
 ):
-    return await news_svc.list_news_items(db, category=category, is_bookmarked=is_bookmarked, limit=limit, offset=offset)
+    return await news_svc.list_news_items(
+        db, category=category, is_bookmarked=is_bookmarked, limit=limit, offset=offset
+    )
 
 
 @router.get("/items/{item_id}", response_model=NewsItemRead)

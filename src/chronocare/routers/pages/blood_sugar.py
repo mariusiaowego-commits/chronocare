@@ -1,6 +1,7 @@
 """Blood sugar HTML pages."""
 
 from datetime import date, datetime
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -13,7 +14,8 @@ from chronocare.services.blood_sugar import create_blood_sugar, list_blood_sugar
 from chronocare.services.person import list_persons
 
 router = APIRouter(tags=["pages"])
-templates = Jinja2Templates(directory=str(__import__("pathlib").Path(__file__).resolve().parent.parent.parent / "templates"))
+_TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent / "templates"
+templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 
 
 @router.get("/blood-sugar", response_class=HTMLResponse)

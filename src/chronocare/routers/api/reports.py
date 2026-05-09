@@ -1,5 +1,7 @@
 """Reports API — statistics and export endpoints."""
 
+import csv
+import io
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
@@ -11,9 +13,6 @@ from chronocare.database import get_db
 from chronocare.models.blood_sugar import BloodSugarRecord
 from chronocare.models.cardiac import BloodPressureRecord
 from chronocare.models.person import Person
-
-import csv
-import io
 
 router = APIRouter(prefix="/api/reports", tags=["reports-api"])
 

@@ -1,6 +1,7 @@
 """Medication Reminder HTML pages."""
 
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse
@@ -12,7 +13,8 @@ from chronocare.services.medication_reminder import get_due_reminders
 from chronocare.services.person import list_persons
 
 router = APIRouter(tags=["pages"])
-templates = Jinja2Templates(directory=str(__import__("pathlib").Path(__file__).resolve().parent.parent.parent / "templates"))
+_TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent / "templates"
+templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 
 
 @router.get("/medication/reminders", response_class=HTMLResponse)

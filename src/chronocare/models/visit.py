@@ -2,7 +2,7 @@
 
 from datetime import date, datetime
 
-from sqlalchemy import CheckConstraint, ForeignKey, JSON, Text, func
+from sqlalchemy import JSON, CheckConstraint, ForeignKey, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from chronocare.models.base import Base

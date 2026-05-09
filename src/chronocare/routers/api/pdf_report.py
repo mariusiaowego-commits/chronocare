@@ -1,12 +1,13 @@
 """PDF Report API — download weekly/monthly reports."""
 
+from io import BytesIO
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from io import BytesIO
 
 from chronocare.database import get_db
-from chronocare.services.pdf_report import generate_weekly_report, generate_monthly_report
+from chronocare.services.pdf_report import generate_monthly_report, generate_weekly_report
 
 router = APIRouter(prefix="/api/pdf-report", tags=["PDF Report"])
 
@@ -28,9 +29,9 @@ async def download_weekly_report(
             },
         )
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}") from e
 
 
 @router.get("/monthly")
@@ -50,6 +51,6 @@ async def download_monthly_report(
             },
         )
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}") from e
