@@ -135,5 +135,5 @@ uv run alembic upgrade head
 ## 收尾文档
 - STATUS.md — 项目根目录
 - DEV_PLAN.md — 项目根目录
-- vibe coding log — **无**
+- vibe-coding-log/ — 项目根目录，按日期记录
 - wiki — **无**（未建立）
