@@ -1,50 +1,66 @@
 # ChronoCare STATUS
 
-> 最后更新: 2026-05-09
+> 最后更新: 2026-05-10
 
-## 当前阶段: Phase 4 计划中
+## 当前阶段: v0.3.0 稳定版 — Phase 4 规划中
 
-## 已完成
-- [x] 产品功能调研与设计
-- [x] 技术栈评估与选型
-- [x] UI/UX 设计方案
-- [x] 数据库表结构设计
-- [x] 测试验收体系设计
-- [x] 三阶段开发计划制定
-- [x] 项目骨架搭建 (uv + src/chronocare/ layout)
-- [x] Alembic 迁移 + 数据库初始化
-- [x] 老人档案 CRUD (Person)
-- [x] 血糖记录 CRUD
-- [x] 血压记录 CRUD
-- [x] 用药管理 CRUD
-- [x] 就诊记录 CRUD
-- [x] 仪表盘页面 (/dashboard)
-- [x] Wiki 知识库 (FTS5 全文搜索)
-- [x] News 健康新闻 (FTS5 全文搜索)
-- [x] 统计报表 (Chart.js 趋势图 + CSV 导出)
-- [x] 数据备份/恢复 (JSON + 加密)
-- [x] 用药提醒 (定时提醒)
-- [x] 心脏指标增强 (血压分级/心率检测)
-- [x] 健康档案汇总 (/health-profile)
-- [x] 统计报表增强 (分布图/周对比)
-- [x] 趋势预警 (自动检测异常模式)
-- [x] 周报/月报自动生成 (/health-report)
-- [x] 邮件通知系统
-- [x] 血糖波动分析 (/bs-analysis)
-- [x] 血压昼夜节律分析 (/bp-circadian)
-- [x] 用药依从性分析 (/med-adherence)
-- [x] PDF 报告导出
+## 版本历史
+| 版本 | 日期 | 说明 |
+|------|------|------|
+| v0.1.0 | 2026-04 ~ 05-04 | Phase 1+2+3 完整功能 (147路由) |
+| v0.3.0 | 2026-05-09 | 精简重构：删除40+文件，聚焦3核心功能 |
 
-## 待完成 (Phase 4)
-- [ ] 深度分析增强
-  - [ ] 血糖趋势预测
-  - [ ] 血压变异性分析
-  - [ ] 综合健康风险评分
-  - [ ] 个性化建议生成
+## 核心功能 (v0.3.0)
+
+### 1. 人员档案管理 ✅
+- Person + Condition 模型
+- 父母双角色支持
+- CRUD: API + 页面 (list/detail/form)
+
+### 2. 血糖监控 ✅
+- BloodSugarRecord 模型
+- 空腹/餐后/睡前/随机 四种测量时机
+- CRUD: API + 页面 (list/form)
+
+### 3. 就诊记录 ✅
+- Visit 模型
+- 医院/科室/医生/诊断/处方
+- CRUD: API + 页面 (list/form)
+
+### 4. 就医记录 OCR ✅ (模型+路由就绪，OCR为占位实现)
+- MedicalRecord 模型
+- 支持4种类型: 就医记录/化验报告/处方/医嘱
+- 图片上传 + OCR处理接口 (mock，待集成实际OCR服务)
+- CRUD: API + 页面 (list/detail/form)
+
+## 路由统计
+- 功能路由: ~47 个
+- 系统路由: /health, /docs, /openapi, /redoc
+
+## 已删除功能 (v0.3.0 精简)
+以下功能在 Phase 1-3 中开发完成，但 v0.3.0 重构时移除：
+血压记录、用药管理、仪表盘、知识库、健康新闻、
+统计报表、趋势预警、周报/月报、邮件通知、
+血糖波动分析、血压昼夜节律、用药依从性、PDF导出、
+数据备份/恢复、用药提醒、健康档案汇总
+
+## 待完成
+- [ ] OCR 实际服务集成 (PaddleOCR/云API，待选型)
+- [ ] Phase 4 深度分析增强 (待规划)
 - [ ] 多端适配 (响应式)
 - [ ] 本地打包 (.app)
 
 ## Git
 - 分支: main
-- 最新提交: 6104237 fix: 修复alembic/env.py的import排序问题
-- 总路由: 147 个
+- 工作区: 干净 (无未提交改动)
+- 最新提交: 6d00b1d docs: 更新AGENTS.md，添加wiki路径
+- pyproject.toml version: 0.1.0 (未更新到 0.3.0)
+
+## 开发命令
+```bash
+uv sync                                    # 安装依赖
+uv run uvicorn chronocare.main:app --reload # 启动
+uv run pytest                              # 测试
+uv run ruff check .                        # Lint
+uv run alembic upgrade head                # 数据库迁移
+```
