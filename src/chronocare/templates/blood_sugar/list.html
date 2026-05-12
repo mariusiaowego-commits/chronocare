@@ -1,77 +1,144 @@
 {% extends "base.html" %}
-{% block title %}血糖记录 - ChronoCare{% endblock %}
+{% block title %}血糖监控 - ChronoCare{% endblock %}
+
+{% block head %}
+<script>
+function initBsTrendChart(labels, values) {
+    const ctx = document.getElementById('bsTrendChart');
+    if (!ctx || !labels.length) return;
+    if (window._trendChart) window._trendChart.destroy();
+    const colors = values.map(v =>
+        v > 11.1 ? 'rgb(239,68,68)' : v > 7.8 ? 'rgb(245,158,11)' : v < 3.9 ? 'rgb(59,130,246)' : 'rgb(20,184,166)'
+    );
+    window._trendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '血糖 mmol/L',
+                data: values,
+                borderColor: 'rgb(14,165,233)',
+                backgroundColor: 'rgba(14,165,233,0.1)',
+                borderWidth: 2,
+                pointBackgroundColor: colors,
+                pointRadius: 4,
+                fill: true,
+                tension: 0.3,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { min: 0, max: 20, grid: { color: 'rgba(148,163,184,0.15)' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold">🩸 血糖记录</h1>
+<div class="max-w-5xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">🩸 血糖监控</h1>
         <a href="/blood-sugar/new{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}"
-           class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+           class="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-medium transition shadow-sm">
             + 记录血糖
         </a>
     </div>
 
-    <!-- 人员筛选 -->
-    <div class="mb-4 flex gap-2 flex-wrap">
+    <!-- Person filter pills -->
+    <div class="mb-5 flex gap-2 flex-wrap items-center">
+        <span class="text-sm text-slate-500 mr-1">👤</span>
         <a href="/blood-sugar"
-           class="px-3 py-1 rounded-full text-sm {{ 'bg-blue-600 text-white' if not selected_person_id else 'bg-slate-200 dark:bg-slate-700' }}">全部</a>
+           class="px-3 py-1.5 rounded-full text-sm font-medium transition {{ 'bg-sky-600 text-white' if not selected_person_id else 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600' }}">
+            全部
+        </a>
         {% for p in persons %}
         <a href="/blood-sugar?person_id={{ p.id }}"
-           class="px-3 py-1 rounded-full text-sm {{ 'bg-blue-600 text-white' if selected_person_id == p.id else 'bg-slate-200 dark:bg-slate-700' }}">{{ p.name }}</a>
+           class="px-3 py-1.5 rounded-full text-sm font-medium transition {{ 'bg-sky-600 text-white' if selected_person_id == p.id else 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600' }}">
+            {{ p.name }}
+        </a>
         {% endfor %}
     </div>
 
     {% if records %}
-    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+    <!-- Trend Chart -->
+    {% if chart_labels %}
+    <div class="card-animate mb-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-slate-700 dark:text-slate-200">📈 血糖趋势</h3>
+        </div>
+        <div style="height:200px">
+            <canvas id="bsTrendChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Records table -->
+    <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
         <table class="w-full text-sm">
-            <thead class="bg-slate-50 dark:bg-slate-700">
+            <thead class="bg-slate-50 dark:bg-slate-700/50">
                 <tr>
-                    <th class="px-4 py-3 text-left">时间</th>
-                    <th class="px-4 py-3 text-left">类型</th>
-                    <th class="px-4 py-3 text-right">血糖值</th>
-                    <th class="px-4 py-3 text-center">状态</th>
-                    <th class="px-4 py-3 text-left">备注</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">时间</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">类型</th>
+                    <th class="px-4 py-3 text-right font-semibold text-slate-600 dark:text-slate-300">血糖值</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-600 dark:text-slate-300">状态</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">备注</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
                 {% for r in records %}
-                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                    <td class="px-4 py-3">{{ r.measured_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <tr class="hover:bg-sky-50/50 dark:hover:bg-sky-900/10 transition">
+                    <td class="px-4 py-3 text-slate-600 dark:text-slate-300 text-xs">
+                        {{ r.measured_at.strftime('%Y-%m-%d %H:%M') }}
+                    </td>
                     <td class="px-4 py-3">
-                        <span class="px-2 py-0.5 rounded text-xs
-                            {{ 'bg-purple-100 text-purple-700' if r.meal_context == 'fasting'
-                               else 'bg-orange-100 text-orange-700' if r.meal_context == 'after_meal'
-                               else 'bg-blue-100 text-blue-700' if r.meal_context == 'before_meal'
-                               else 'bg-indigo-100 text-indigo-700' if r.meal_context == 'bedtime'
-                               else 'bg-slate-100 text-slate-700' }}">
-                            {{ '空腹' if r.meal_context == 'fasting'
-                               else '餐后' if r.meal_context == 'after_meal'
-                               else '餐前' if r.meal_context == 'before_meal'
-                               else '睡前' if r.meal_context == 'bedtime'
-                               else '随机' if r.meal_context == 'random'
-                               else '-' }}
+                        <span class="px-2 py-0.5 rounded text-xs font-medium
+                            {{ 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' if r.meal_context == 'fasting'
+                               else 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' if r.meal_context == 'after_meal'
+                               else 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' if r.meal_context == 'before_meal'
+                               else 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' if r.meal_context == 'bedtime'
+                               else 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' }}">
+                            {{ '空腹' if r.meal_context == 'fasting' else '餐后' if r.meal_context == 'after_meal' else '餐前' if r.meal_context == 'before_meal' else '睡前' if r.meal_context == 'bedtime' else '随机' }}
                         </span>
                     </td>
-                    <td class="px-4 py-3 text-right font-semibold
-                        {{ 'text-red-600' if r.value > 11.1
-                           else 'text-yellow-600' if r.value > 7.8
-                           else 'text-green-600' }}">
-                        {{ r.value }} mmol/L
+                    <td class="px-4 py-3 text-right font-bold
+                        {{ 'text-red-600' if r.value > 11.1 else 'text-amber-500' if r.value > 7.8 else 'text-teal-600' if r.value < 3.9 else 'text-teal-600' }}">
+                        {{ r.value }} <span class="text-xs font-normal text-slate-400">mmol/L</span>
                     </td>
                     <td class="px-4 py-3 text-center">
-                        {% if r.is_alert %}<span class="text-red-500">⚠️</span>{% else %}<span class="text-green-500">✓</span>{% endif %}
+                        {% if r.is_alert %}<span class="text-red-500 text-lg">⚠️</span>{% else %}<span class="text-teal-500">✓</span>{% endif %}
                     </td>
-                    <td class="px-4 py-3 text-slate-500">{{ r.notes or '' }}</td>
+                    <td class="px-4 py-3 text-slate-500 text-xs">{{ r.notes or '' }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
     {% else %}
-    <div class="text-center py-12 text-slate-500">
-        <p class="text-4xl mb-4">🩸</p>
-        <p>还没有血糖记录</p>
+    <!-- Empty state -->
+    <div class="flex flex-col items-center justify-center py-20 text-slate-400">
+        <span class="text-5xl mb-4">🩸</span>
+        <h2 class="text-lg font-medium text-slate-500 mb-2">还没有血糖记录</h2>
+        <p class="text-sm mb-6">开始记录，掌握血糖变化趋势</p>
+        <a href="/blood-sugar/new{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}"
+           class="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-medium transition">
+            + 记录第一条血糖
+        </a>
     </div>
     {% endif %}
 </div>
+
+{% if chart_labels %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    initBsTrendChart({{ chart_labels | tojson }}, {{ chart_values | tojson }});
+});
+</script>
+{% endif %}
 {% endblock %}

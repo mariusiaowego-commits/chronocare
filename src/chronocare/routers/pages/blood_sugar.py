@@ -18,12 +18,40 @@ _TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent / "templates"
 templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 
 
+def _bs_status_classes(value: float) -> str:
+    if value > 11.1:
+        return "text-red-600"
+    if value > 7.8:
+        return "text-amber-500"
+    if value < 3.9:
+        return "text-blue-600"
+    return "text-teal-600"
+
+
 @router.get("/blood-sugar", response_class=HTMLResponse)
 async def blood_sugar_list(request: Request, person_id: int | None = Query(None), db: AsyncSession = Depends(get_db)):
     records = await list_blood_sugar(db, person_id)
     persons = await list_persons(db)
+
+    # Sort records by date descending
+    records = sorted(records, key=lambda r: r.measured_at, reverse=True)
+
+    # Build chart data: last 14 data points for selected person
+    chart_labels = []
+    chart_values = []
+    if person_id:
+        all_for_person = await list_blood_sugar(db, person_id)
+        all_for_person = sorted(all_for_person, key=lambda r: r.measured_at)[-14:]
+        chart_labels = [r.measured_at.strftime("%m-%d") for r in all_for_person]
+        chart_values = [r.value for r in all_for_person]
+
     return templates.TemplateResponse(request, "blood_sugar/list.html", {
-        "request": request, "records": records, "persons": persons, "selected_person_id": person_id,
+        "request": request,
+        "records": records,
+        "persons": persons,
+        "selected_person_id": person_id,
+        "chart_labels": chart_labels,
+        "chart_values": chart_values,
     })
 
 
@@ -31,7 +59,10 @@ async def blood_sugar_list(request: Request, person_id: int | None = Query(None)
 async def blood_sugar_new(request: Request, person_id: int | None = Query(None), db: AsyncSession = Depends(get_db)):
     persons = await list_persons(db)
     return templates.TemplateResponse(request, "blood_sugar/form.html", {
-        "request": request, "persons": persons, "selected_person_id": person_id, "today": date.today().isoformat(),
+        "request": request,
+        "persons": persons,
+        "selected_person_id": person_id,
+        "today": date.today().isoformat(),
     })
 
 
@@ -51,4 +82,6 @@ async def blood_sugar_create(request: Request, db: AsyncSession = Depends(get_db
         is_alert=form.get("is_alert") == "on",
     )
     await create_blood_sugar(db, data)
-    return RedirectResponse(url=f"/blood-sugar?person_id={data.person_id}", status_code=303)
+    resp = RedirectResponse(url=f"/blood-sugar?person_id={data.person_id}", status_code=303)
+    resp.headers["X-Toast"] = "血糖已记录|success"
+    return resp

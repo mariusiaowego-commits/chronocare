@@ -1,46 +1,244 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ChronoCare{% endblock %}</title>
+    <meta name="description" content="老年健康管理平台">
+    <meta name="theme-color" content="#0284c7">
+    <link rel="manifest" href="/static/manifest.json">
+
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- GSAP -->
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+
+    <!-- Tailwind config for custom medical theme -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        // Medical teal primary
+                        primary: { 50:'#f0fdfa',100:'#ccfbf1',200:'#99f6e4',300:'#5eead4',400:'#2dd4bf',500:'#14b8a6',600:'#0d9488',700:'#0f766e',800:'#115e59',900:'#134e4a' },
+                        // Sky blue accent (alerts, CTAs)
+                        accent: { 50:'#f0f9ff',100:'#e0f2fe',200:'#bae6fd',300:'#7dd3fc',400:'#38bdf8',500:'#0ea5e9',600:'#0284c7',700:'#0369a1',800:'#075985',900:'#0c4a6e' },
+                    }
+                }
+            }
+        }
+    </script>
+
     {% block head %}{% endblock %}
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 min-h-screen">
-    {% block body %}
+
+    <!-- Toast container (for GSAP animations) -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none" aria-live="polite"></div>
+
     <div class="flex min-h-screen">
-        <!-- Sidebar -->
-        <aside class="w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 hidden lg:block">
-            <div class="p-6">
-                <h1 class="text-xl font-bold text-blue-600">🩺 ChronoCare</h1>
+        <!-- ========== SIDEBAR ========== -->
+        <!-- Desktop sidebar (always visible ≥1024px) -->
+        <aside id="sidebar"
+               class="fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700
+                      transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out"
+               aria-label="主导航">
+
+            <!-- Logo -->
+            <div class="flex items-center gap-3 px-5 py-5 border-b border-slate-200 dark:border-slate-700">
+                <span class="text-2xl">🩺</span>
+                <div>
+                    <h1 class="text-base font-bold text-sky-700 dark:text-sky-300 leading-tight">ChronoCare</h1>
+                    <p class="text-xs text-slate-400">老年健康管理</p>
+                </div>
             </div>
-            <nav class="px-4 space-y-1">
-                <a href="/" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+
+            <!-- Nav -->
+            <nav class="px-3 py-4 space-y-1" aria-label="主导航">
+                <a href="/"
+                   hx-boost="true"
+                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                          {{ 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300' if request.path == '/' else 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
                     📊 仪表盘
                 </a>
-                <a href="/persons" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
-                    📋 人员档案
+                <a href="/persons"
+                   hx-boost="true"
+                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                          {{ 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300' if '/persons' in request.path else 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
+                    👤 人员档案
                 </a>
-                <a href="/blood-sugar" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
-                    🩸 血糖
+                <a href="/blood-sugar"
+                   hx-boost="true"
+                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                          {{ 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300' if '/blood-sugar' in request.path else 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
+                    🩸 血糖监控
                 </a>
-                <a href="/visits" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
-                    🏥 就诊
+                <a href="/visits"
+                   hx-boost="true"
+                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                          {{ 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300' if '/visits' in request.path else 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
+                    🏥 就诊记录
                 </a>
-                <a href="/medical-records" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
-                    📄 就医记录OCR
+                <a href="/medical-records"
+                   hx-boost="true"
+                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                          {{ 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300' if '/medical-records' in request.path else 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
+                    📄 就医OCR
                 </a>
             </nav>
+
+            <!-- Footer: dark mode toggle -->
+            <div class="absolute bottom-0 left-0 right-0 px-4 py-4 border-t border-slate-200 dark:border-slate-700">
+                <button id="theme-toggle"
+                        class="flex items-center gap-2 w-full px-3 py-2 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                        aria-label="切换深色模式">
+                    <span id="theme-icon">🌙</span>
+                    <span id="theme-label">深色模式</span>
+                </button>
+            </div>
         </aside>
 
-        <!-- Main content -->
-        <main class="flex-1 p-6">
-            {% block content %}{% endblock %}
-        </main>
+        <!-- Mobile overlay -->
+        <div id="sidebar-overlay"
+             class="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden"
+             aria-hidden="true"></div>
+
+        <!-- ========== MAIN ========== -->
+        <div class="flex-1 flex flex-col min-w-0">
+            <!-- Mobile top bar -->
+            <header class="lg:hidden sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-b border-slate-200 dark:border-slate-700">
+                <button id="menu-toggle"
+                        class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                        aria-label="打开菜单" aria-expanded="false">
+                    <svg id="menu-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                <span class="text-base font-bold text-sky-700 dark:text-sky-300">🩺 ChronoCare</span>
+            </header>
+
+            <!-- Page content -->
+            <main class="flex-1 p-4 sm:p-6 lg:p-8" id="main-content">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
     </div>
-    {% endblock %}
+
+    <script>
+        // ─── Sidebar toggle (mobile) ───
+        const menuToggle = document.getElementById('menu-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+
+        function openSidebar() {
+            sidebar.classList.remove('-translate-x-full');
+            overlay.classList.remove('opacity-0', 'pointer-events-none');
+            menuToggle.setAttribute('aria-expanded', 'true');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeSidebar() {
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('opacity-0', 'pointer-events-none');
+            menuToggle.setAttribute('aria-expanded', 'false');
+            document.body.style.overflow = '';
+        }
+
+        menuToggle?.addEventListener('click', () => {
+            const isOpen = !sidebar.classList.contains('-translate-x-full');
+            isOpen ? closeSidebar() : openSidebar();
+        });
+        overlay?.addEventListener('click', closeSidebar);
+
+        // ─── Dark mode toggle ───
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const themeLabel = document.getElementById('theme-label');
+
+        function applyTheme(dark) {
+            document.documentElement.classList.toggle('dark', dark);
+            themeIcon.textContent = dark ? '☀️' : '🌙';
+            themeLabel.textContent = dark ? '浅色模式' : '深色模式';
+            localStorage.setItem('theme', dark ? 'dark' : 'light');
+        }
+
+        // Init: check localStorage or system preference
+        const saved = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        applyTheme(saved === 'dark' || (!saved && prefersDark));
+
+        themeToggle?.addEventListener('click', () => {
+            applyTheme(!document.documentElement.classList.contains('dark'));
+        });
+
+        // ─── GSAP + HTMX afterSwap stagger ───
+        function staggerIn(selector, fromVars, stagger = 0.07) {
+            gsap.fromTo(selector,
+                { opacity: 0, y: 16, ...fromVars },
+                { opacity: 1, y: 0, duration: 0.4, stagger, ease: 'power2.out' }
+            );
+        }
+
+        // Stagger list cards on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            staggerIn('.card-animate', { scale: 0.97 }, 0.08);
+        });
+
+        // Stagger new content after HTMX swap
+        document.body.addEventListener('htmx:afterSwap', (e) => {
+            staggerIn('.card-animate', { scale: 0.97 }, 0.08);
+            // Close mobile sidebar on nav
+            if (e.detail.target.id === 'main-content') closeSidebar();
+        });
+
+        // ─── Toast helper (GSAP animated) ───
+        window.showToast = function(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const colors = {
+                success: 'bg-teal-600',
+                error: 'bg-red-600',
+                warning: 'bg-amber-500',
+                info: 'bg-sky-600'
+            };
+            const icons = { success:'✓', error:'✗', warning:'⚠', info:'ℹ' };
+
+            const toast = document.createElement('div');
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl text-white shadow-lg ${colors[type] || colors.info} pointer-events-auto cursor-pointer`;
+            toast.innerHTML = `<span class="text-lg">${icons[type] || icons.info}</span><span class="text-sm font-medium">${message}</span>`;
+            toast.addEventListener('click', () => toast.remove());
+            container.appendChild(toast);
+
+            gsap.fromTo(toast, { opacity: 0, x: 40, scale: 0.9 }, { opacity: 1, x: 0, scale: 1, duration: 0.3, ease: 'back.out(2)' });
+            setTimeout(() => {
+                gsap.to(toast, { opacity: 0, x: 40, scale: 0.9, duration: 0.3, ease: 'power2.in', onComplete: () => toast.remove() });
+            }, 3000);
+        };
+
+        // HTMX toast on response
+        document.body.addEventListener('htmx:afterRequest', (e) => {
+            constToast = e.detail.xhr?.getResponseHeader('X-Toast');
+            if (constToast) {
+                const [msg, type] = constToast.split('|');
+                showToast(msg.trim(), type?.trim() || 'success');
+            }
+        });
+
+        // ─── Card hover effect ───
+        document.addEventListener('mouseover', (e) => {
+            const card = e.target.closest('.card-interactive');
+            if (card) gsap.to(card, { y: -2, boxShadow: '0 8px 25px rgba(0,0,0,0.1)', duration: 0.2 });
+        });
+        document.addEventListener('mouseout', (e) => {
+            const card = e.target.closest('.card-interactive');
+            if (card) gsap.to(card, { y: 0, boxShadow: '0 0px 0px rgba(0,0,0,0)', duration: 0.2 });
+        });
+    </script>
 </body>
 </html>
