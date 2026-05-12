@@ -1,44 +1,96 @@
 {% extends "base.html" %}
 {% block title %}仪表盘 - ChronoCare{% endblock %}
 
+{% block head %}
+<script>
+function initBsChart(labels, values, statuses) {
+    const ctx = document.getElementById('bsChart');
+    if (!ctx) return;
+    if (window._bsChartInstance) window._bsChartInstance.destroy();
+
+    const colors = statuses || values.map(v =>
+        v > 11.1 ? 'rgb(239,68,68)' : v > 7.8 ? 'rgb(245,158,11)' : v < 3.9 ? 'rgb(59,130,246)' : 'rgb(20,184,166)'
+    );
+
+    window._bsChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '血糖 (mmol/L)',
+                data: values,
+                borderColor: 'rgb(14,165,233)',
+                backgroundColor: 'rgba(14,165,233,0.1)',
+                borderWidth: 2,
+                pointBackgroundColor: colors,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                fill: true,
+                tension: 0.3,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => `${ctx.parsed.y} mmol/L`,
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    min: 0,
+                    max: 20,
+                    grid: { color: 'rgba(148,163,184,0.15)' },
+                    ticks: { callback: v => v + '' }
+                },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-6xl mx-auto">
-    <!-- 老人切换器 -->
-    <div class="mb-6 flex items-center gap-4">
-        <h1 class="text-2xl font-bold">📊 仪表盘</h1>
+<div class="max-w-7xl mx-auto">
+    <!-- ── Person Switcher ── -->
+    <div class="mb-6 flex items-center justify-between gap-4 flex-wrap">
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">📊 仪表盘</h1>
+        {% if persons %}
         <div class="flex gap-2 flex-wrap">
             {% for p in persons %}
             <a href="/dashboard?person_id={{ p.id }}"
-               class="px-4 py-2 rounded-full text-sm font-medium transition
-                  {{ 'bg-blue-600 text-white shadow-md' if selected and selected.id == p.id
-                     else 'bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700' }}">
+               class="card-animate px-4 py-2 rounded-full text-sm font-medium transition-all
+                      {{ 'bg-sky-600 text-white shadow-md ring-2 ring-sky-400' if selected and selected.id == p.id
+                         else 'bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-sky-400 dark:hover:border-sky-500 hover:text-sky-600 dark:hover:text-sky-300' }}">
                 {{ '👩' if p.gender == 'F' else '👨' if p.gender == 'M' else '👤' }} {{ p.name }}
             </a>
             {% endfor %}
         </div>
+        {% endif %}
     </div>
 
     {% if selected %}
-    <!-- 健康预警 -->
+    <!-- ── Health Alerts ── -->
     {% if alerts %}
-    <div class="mb-6 rounded-xl border-2 {{ 'border-red-400 bg-red-50 dark:bg-red-900/20' if has_critical else 'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20' }} p-5">
-        <div class="flex items-center gap-2 mb-3">
+    <div class="mb-6 rounded-2xl border-2 {{ 'border-red-400 bg-red-50 dark:bg-red-900/20' if has_critical else 'border-amber-300 bg-amber-50 dark:bg-amber-900/20' }} p-5 card-animate">
+        <div class="flex items-center gap-2 mb-4">
             <span class="text-xl">{{ '🚨' if has_critical else '⚠️' }}</span>
-            <h3 class="font-semibold {{ 'text-red-800 dark:text-red-300' if has_critical else 'text-yellow-800 dark:text-yellow-300' }}">
+            <h2 class="font-semibold text-base {{ 'text-red-800 dark:text-red-300' if has_critical else 'text-amber-800 dark:text-amber-300' }}">
                 健康预警 ({{ alert_count }} 项)
-            </h3>
+            </h2>
         </div>
-        <div class="grid gap-2 sm:grid-cols-2">
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {% for alert in alerts %}
-            <div class="flex items-start gap-2 p-3 rounded-lg {{ 'bg-red-100 dark:bg-red-900/30' if alert.severity == 'critical' else 'bg-yellow-100 dark:bg-yellow-900/30' if alert.severity == 'high' else 'bg-orange-100 dark:bg-orange-900/30' }}">
-                <span class="text-lg">{{ alert.icon }}</span>
+            <div class="flex items-start gap-3 p-3 rounded-xl {{ 'bg-red-100/70 dark:bg-red-900/30' if alert.severity == 'critical' else 'bg-amber-100/70 dark:bg-amber-900/30' if alert.severity == 'high' else 'bg-orange-100/70 dark:bg-orange-900/30' }}">
+                <span class="text-lg mt-0.5">{{ alert.icon }}</span>
                 <div>
-                    <p class="font-medium text-sm {{ 'text-red-800 dark:text-red-300' if alert.severity == 'critical' else 'text-yellow-800 dark:text-yellow-300' if alert.severity == 'high' else 'text-orange-800 dark:text-orange-300' }}">
-                        {{ alert.title }}
-                    </p>
-                    <p class="text-xs {{ 'text-red-600 dark:text-red-400' if alert.severity == 'critical' else 'text-yellow-600 dark:text-yellow-400' if alert.severity == 'high' else 'text-orange-600 dark:text-orange-400' }}">
-                        {{ alert.message }}
-                    </p>
+                    <p class="font-semibold text-sm {{ 'text-red-800 dark:text-red-300' if alert.severity == 'critical' else 'text-amber-800 dark:text-amber-300' }}">{{ alert.title }}</p>
+                    <p class="text-xs mt-0.5 {{ 'text-red-600 dark:text-red-400' if alert.severity == 'critical' else 'text-amber-600 dark:text-amber-400' }}">{{ alert.message }}</p>
                 </div>
             </div>
             {% endfor %}
@@ -46,107 +98,172 @@
     </div>
     {% endif %}
 
-    <!-- 个人信息卡 -->
-    <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-6 mb-6 text-white">
-        <div class="flex items-center gap-4">
-            <span class="text-5xl">{{ '👩' if selected.gender == 'F' else '👨' if selected.gender == 'M' else '👤' }}</span>
-            <div>
-                <h2 class="text-2xl font-bold">{{ selected.name }}</h2>
-                <p class="opacity-90">
-                    {% if selected.birth_date %}{{ selected.birth_date }}{% endif %}
-                    {% if selected.height_cm %} · {{ selected.height_cm }}cm{% endif %}
-                    {% if selected.weight_kg %} · {{ selected.weight_kg }}kg{% endif %}
-                    {% if selected.blood_type %} · {{ selected.blood_type }}型{% endif %}
-                </p>
-                {% if selected.disease_tags %}
-                <div class="flex flex-wrap gap-1 mt-2">
-                    {% for tag in selected.disease_tags %}
-                    <span class="px-2 py-0.5 bg-white/20 rounded text-xs">{{ tag }}</span>
-                    {% endfor %}
+    <!-- ── Profile Card ── -->
+    <div class="card-animate mb-6 bg-gradient-to-r from-sky-500 to-cyan-500 rounded-2xl p-6 text-white shadow-lg">
+        <div class="flex items-start justify-between flex-wrap gap-4">
+            <div class="flex items-center gap-4">
+                <span class="text-5xl">{{ '👩' if selected.gender == 'F' else '👨' if selected.gender == 'M' else '👤' }}</span>
+                <div>
+                    <h2 class="text-2xl font-bold">{{ selected.name }}</h2>
+                    <p class="opacity-90 text-sm mt-1">
+                        {% if selected.birth_date %}{{ selected.birth_date }}{% endif %}
+                        {% if selected.height_cm %} · {{ selected.height_cm }}cm{% endif %}
+                        {% if selected.weight_kg %} · {{ selected.weight_kg }}kg{% endif %}
+                        {% if selected.blood_type %} · {{ selected.blood_type }}型{% endif %}
+                    </p>
+                    {% if selected.disease_tags %}
+                    <div class="flex flex-wrap gap-1.5 mt-2">
+                        {% for tag in selected.disease_tags %}
+                        <span class="px-2.5 py-0.5 bg-white/20 rounded-full text-xs font-medium">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
+            <a href="/persons/{{ selected.id }}"
+               class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-medium transition backdrop-blur-sm">
+                ✏️ 编辑档案
+            </a>
         </div>
     </div>
 
-    <!-- 快捷操作 -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        <a href="/blood-sugar/new?person_id={{ selected.id }}" class="text-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition">
-            <span class="text-2xl">🩸</span>
-            <p class="text-sm mt-1">记录血糖</p>
+    <!-- ── Quick Actions ── -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+        <a href="/blood-sugar/new?person_id={{ selected.id }}"
+           class="card-animate card-interactive text-center p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-sky-300 dark:hover:border-sky-600 transition shadow-sm">
+            <span class="text-3xl">🩸</span>
+            <p class="text-sm font-medium mt-2 text-slate-700 dark:text-slate-200">记录血糖</p>
         </a>
-        <a href="/visits/new?person_id={{ selected.id }}" class="text-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition">
-            <span class="text-2xl">🏥</span>
-            <p class="text-sm mt-1">添加就诊</p>
+        <a href="/visits/new?person_id={{ selected.id }}"
+           class="card-animate card-interactive text-center p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-sky-300 dark:hover:border-sky-600 transition shadow-sm">
+            <span class="text-3xl">🏥</span>
+            <p class="text-sm font-medium mt-2 text-slate-700 dark:text-slate-200">添加就诊</p>
         </a>
-        <a href="/medical-records/new?person_id={{ selected.id }}" class="text-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition">
-            <span class="text-2xl">📄</span>
-            <p class="text-sm mt-1">就医OCR</p>
+        <a href="/medical-records/new?person_id={{ selected.id }}"
+           class="card-animate card-interactive text-center p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-sky-300 dark:hover:border-sky-600 transition shadow-sm">
+            <span class="text-3xl">📄</span>
+            <p class="text-sm font-medium mt-2 text-slate-700 dark:text-slate-200">就医OCR</p>
         </a>
-        <a href="/visits?person_id={{ selected.id }}" class="text-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition">
-            <span class="text-2xl">📋</span>
-            <p class="text-sm mt-1">就诊记录</p>
+        <a href="/visits?person_id={{ selected.id }}"
+           class="card-animate card-interactive text-center p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-sky-300 dark:hover:border-sky-600 transition shadow-sm">
+            <span class="text-3xl">📋</span>
+            <p class="text-sm font-medium mt-2 text-slate-700 dark:text-slate-200">就诊记录</p>
         </a>
     </div>
 
-    <!-- 数据卡片网格 -->
+    <!-- ── Two-column content ── -->
     <div class="grid gap-6 lg:grid-cols-2">
-        <!-- 最近血糖 -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+        <!-- BS Trend Chart -->
+        <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="font-semibold">🩸 最近血糖</h3>
-                <a href="/blood-sugar?person_id={{ selected.id }}" class="text-sm text-blue-600 hover:underline">查看全部</a>
+                <h3 class="font-semibold text-slate-700 dark:text-slate-200">🩸 血糖趋势 (近14天)</h3>
+                <a href="/blood-sugar?person_id={{ selected.id }}" class="text-xs text-sky-600 hover:underline">查看全部 →</a>
+            </div>
+            {% if chart_labels %}
+            <div class="relative" style="height:220px">
+                <canvas id="bsChart"></canvas>
+            </div>
+            {% else %}
+            <div class="flex flex-col items-center justify-center py-12 text-slate-400">
+                <span class="text-4xl mb-3">📊</span>
+                <p class="text-sm">暂无血糖数据</p>
+                <a href="/blood-sugar/new?person_id={{ selected.id }}" class="mt-2 text-sky-600 text-sm hover:underline">立即录入</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Recent BS Records -->
+        <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-slate-700 dark:text-slate-200">🩸 最近血糖</h3>
+                <a href="/blood-sugar?person_id={{ selected.id }}" class="text-xs text-sky-600 hover:underline">查看全部 →</a>
             </div>
             {% if bs_records %}
-            <div class="space-y-2">
+            <div class="space-y-2.5 max-h-56 overflow-y-auto">
                 {% for r in bs_records %}
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-slate-500">{{ r.measured_at.strftime('%m-%d %H:%M') }}</span>
-                    <span class="font-semibold
-                        {{ 'text-red-600' if r.value > 11.1
-                           else 'text-yellow-600' if r.value > 7.8
-                           else 'text-green-600' }}">
-                        {{ r.value }} mmol/L
+                <div class="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs text-slate-400">{{ r.measured_at.strftime('%m-%d %H:%M') }}</span>
+                        <span class="px-2 py-0.5 rounded text-xs font-medium
+                            {{ 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' if r.meal_context == 'fasting'
+                               else 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' if r.meal_context == 'after_meal'
+                               else 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' if r.meal_context == 'before_meal'
+                               else 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' if r.meal_context == 'bedtime'
+                               else 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' }}">
+                            {{ '空腹' if r.meal_context == 'fasting' else '餐后' if r.meal_context == 'after_meal' else '餐前' if r.meal_context == 'before_meal' else '睡前' if r.meal_context == 'bedtime' else '随机' }}
+                        </span>
+                    </div>
+                    <span class="font-bold
+                        {{ 'text-red-600' if r.value > 11.1 else 'text-amber-500' if r.value > 7.8 else 'text-teal-600' if r.value < 3.9 else 'text-teal-600' }}">
+                        {{ r.value }} <span class="text-xs font-normal text-slate-400">mmol/L</span>
                     </span>
                 </div>
                 {% endfor %}
             </div>
             {% else %}
-            <p class="text-slate-400 text-sm">暂无记录</p>
+            <div class="flex flex-col items-center justify-center py-10 text-slate-400">
+                <span class="text-3xl mb-2">🩸</span>
+                <p class="text-sm">暂无血糖记录</p>
+            </div>
             {% endif %}
         </div>
 
-        <!-- 最近就诊 -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+        <!-- Recent Visits -->
+        <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm lg:col-span-2">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="font-semibold">🏥 最近就诊</h3>
-                <a href="/visits?person_id={{ selected.id }}" class="text-sm text-blue-600 hover:underline">查看全部</a>
+                <h3 class="font-semibold text-slate-700 dark:text-slate-200">🏥 最近就诊</h3>
+                <a href="/visits?person_id={{ selected.id }}" class="text-xs text-sky-600 hover:underline">查看全部 →</a>
             </div>
             {% if visits %}
-            <div class="space-y-3">
+            <div class="grid gap-3 sm:grid-cols-2">
                 {% for v in visits %}
-                <div class="text-sm">
-                    <div class="flex items-center justify-between">
-                        <span class="font-medium">{{ v.hospital or '未记录' }}</span>
-                        <span class="text-slate-500">{{ v.visit_date }}</span>
+                <div class="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
+                    <span class="text-lg mt-0.5">🏥</span>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="font-medium text-sm truncate">{{ v.hospital or '未记录医院' }}</p>
+                            <span class="text-xs text-slate-400 shrink-0">{{ v.visit_date or '日期不详' }}</span>
+                        </div>
+                        {% if v.department %}<p class="text-xs text-slate-500 mt-0.5">{{ v.department }}{% if v.doctor %} · {{ v.doctor }}{% endif %}</p>{% endif %}
+                        {% if v.diagnosis %}<p class="text-xs text-slate-500 mt-1 truncate">诊断: {{ v.diagnosis }}</p>{% endif %}
+                        {% if v.next_followup_date %}<p class="text-xs text-sky-600 mt-1">📅 复诊: {{ v.next_followup_date }}</p>{% endif %}
                     </div>
-                    {% if v.diagnosis %}
-                    <p class="text-slate-500 mt-0.5">{{ v.diagnosis }}</p>
-                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
             {% else %}
-            <p class="text-slate-400 text-sm">暂无就诊记录</p>
+            <div class="flex flex-col items-center justify-center py-10 text-slate-400">
+                <span class="text-3xl mb-2">🏥</span>
+                <p class="text-sm">暂无就诊记录</p>
+            </div>
             {% endif %}
         </div>
     </div>
+
     {% else %}
-    <div class="text-center py-16 text-slate-500">
-        <p class="text-5xl mb-4">👤</p>
-        <p class="text-lg">还没有添加老人</p>
-        <a href="/persons/new" class="text-blue-600 hover:underline mt-2 inline-block">添加第一位老人</a>
+    <!-- ── Empty state ── -->
+    <div class="flex flex-col items-center justify-center py-24 text-slate-400">
+        <span class="text-6xl mb-6">👤</span>
+        <h2 class="text-xl font-semibold text-slate-600 dark:text-slate-300 mb-2">还没有添加老人</h2>
+        <p class="text-sm mb-6">添加第一位老人，开始健康管理</p>
+        <a href="/persons/new"
+           class="px-6 py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-medium transition shadow-md">
+            + 添加老人
+        </a>
     </div>
     {% endif %}
 </div>
+
+{% if chart_labels %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    initBsChart(
+        {{ chart_labels | tojson }},
+        {{ chart_values | tojson }},
+        {{ chart_statuses | tojson }}
+    );
+});
+</script>
+{% endif %}
+{% endblock %}
 {% endblock %}
