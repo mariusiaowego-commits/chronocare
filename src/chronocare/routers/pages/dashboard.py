@@ -8,8 +8,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chronocare.database import get_db
-from chronocare.services.person import get_person, list_persons
 from chronocare.services.blood_sugar import list_blood_sugar
+from chronocare.services.person import get_person, list_persons
 from chronocare.services.visit import list_visits
 
 router = APIRouter(tags=["pages"])
@@ -97,7 +97,6 @@ async def dashboard(
     chart_values = []
     chart_statuses = []
     if selected:
-        two_weeks_ago = selected.created_at if selected.created_at else None
         all_bs_14 = await list_blood_sugar(db, selected.id)
         all_bs_14 = [r for r in all_bs_14 if r.measured_at]
         all_bs_14 = sorted(all_bs_14, key=lambda r: r.measured_at)[-14:]
