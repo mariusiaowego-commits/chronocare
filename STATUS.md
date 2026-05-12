@@ -53,8 +53,8 @@
 ## Git
 - 分支: main
 - 工作区: 干净 (无未提交改动)
-- 最新提交: 6d00b1d docs: 更新AGENTS.md，添加wiki路径
-- pyproject.toml version: 0.1.0 (未更新到 0.3.0)
+- 最新提交: 408e8a6 chore: 更新版本号到0.3.0，删除过时handoff文件
+- pyproject.toml version: 0.3.0 ✅
 
 ## 开发命令
 ```bash
