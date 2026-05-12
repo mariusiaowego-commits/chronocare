@@ -22,6 +22,8 @@ templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 async def visit_list(request: Request, person_id: int | None = Query(None), db: AsyncSession = Depends(get_db)):
     visits = await list_visits(db, person_id)
     persons = await list_persons(db)
+    # Sort by date descending
+    visits = sorted(visits, key=lambda v: v.visit_date or "", reverse=True)
     return templates.TemplateResponse(request, "visit/list.html", {
         "request": request, "visits": visits, "persons": persons, "selected_person_id": person_id,
     })
