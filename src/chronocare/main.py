@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 # API routers
+from chronocare.routers.api.backup import router as api_backup_router
 from chronocare.routers.api.blood_sugar import router as api_bs_router
 from chronocare.routers.api.medical_record import router as api_medical_record_router
 from chronocare.routers.api.person import router as api_person_router
@@ -33,6 +34,7 @@ app.mount("/static", StaticFiles(directory=str(_STATIC)), name="static")
 templates = Jinja2Templates(directory=str(_TEMPLATES))
 
 # Register API routers
+app.include_router(api_backup_router)
 app.include_router(api_person_router)
 app.include_router(api_bs_router)
 app.include_router(api_visit_router)

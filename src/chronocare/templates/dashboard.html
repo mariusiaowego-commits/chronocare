@@ -75,17 +75,17 @@
             <span class="text-2xl">🩸</span>
             <p class="text-sm mt-1">记录血糖</p>
         </a>
-        <a href="/cardiac/bp/new?person_id={{ selected.id }}" class="text-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition">
-            <span class="text-2xl">❤️</span>
-            <p class="text-sm mt-1">记录血压</p>
-        </a>
         <a href="/visits/new?person_id={{ selected.id }}" class="text-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition">
             <span class="text-2xl">🏥</span>
             <p class="text-sm mt-1">添加就诊</p>
         </a>
-        <a href="/medication/new?person_id={{ selected.id }}" class="text-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition">
-            <span class="text-2xl">💊</span>
-            <p class="text-sm mt-1">用药计划</p>
+        <a href="/medical-records/new?person_id={{ selected.id }}" class="text-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition">
+            <span class="text-2xl">📄</span>
+            <p class="text-sm mt-1">就医OCR</p>
+        </a>
+        <a href="/visits?person_id={{ selected.id }}" class="text-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition">
+            <span class="text-2xl">📋</span>
+            <p class="text-sm mt-1">就诊记录</p>
         </a>
     </div>
 
@@ -113,46 +113,6 @@
             </div>
             {% else %}
             <p class="text-slate-400 text-sm">暂无记录</p>
-            {% endif %}
-        </div>
-
-        <!-- 最近血压 -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="font-semibold">❤️ 最近血压</h3>
-                <a href="/cardiac?person_id={{ selected.id }}" class="text-sm text-blue-600 hover:underline">查看全部</a>
-            </div>
-            {% if bp_records %}
-            <div class="space-y-2">
-                {% for r in bp_records %}
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-slate-500">{{ r.measured_at.strftime('%m-%d %H:%M') }}</span>
-                    <span class="font-semibold">{{ r.systolic }}/{{ r.diastolic }} mmHg</span>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p class="text-slate-400 text-sm">暂无记录</p>
-            {% endif %}
-        </div>
-
-        <!-- 用药计划 -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="font-semibold">💊 用药计划</h3>
-                <a href="/medication?person_id={{ selected.id }}" class="text-sm text-blue-600 hover:underline">查看全部</a>
-            </div>
-            {% if plans %}
-            <div class="space-y-2">
-                {% for plan in plans %}
-                <div class="flex items-center justify-between text-sm">
-                    <span>{{ plan.medication.name if plan.medication else '药品 #' ~ plan.medication_id }}</span>
-                    <span class="text-slate-500">{{ plan.dosage }} · {{ plan.frequency }}</span>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p class="text-slate-400 text-sm">暂无用药计划</p>
             {% endif %}
         </div>
 
