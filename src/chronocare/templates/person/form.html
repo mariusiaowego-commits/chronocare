@@ -1,90 +1,111 @@
 {% extends "base.html" %}
-{% block title %}{{ "编辑" if person else "添加" }}老人 - ChronoCare{% endblock %}
+{% block title %}{% if person %}编辑档案{% else %}新增老人{% endif %} - ChronoCare{% endblock %}
 
 {% block content %}
 <div class="max-w-2xl mx-auto">
-    <h1 class="text-2xl font-bold mb-6">{{ "编辑老人信息" if person else "👤 添加老人" }}</h1>
+    <div class="mb-6 flex items-center gap-3">
+        <a href="/persons" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition">←</a>
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">
+            {{ '✏️ 编辑档案' if person else '➕ 新增老人' }}
+        </h1>
+    </div>
 
-    <form method="post" class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 space-y-4">
+    <form method="post"
+          action="{% if person %}/persons/{{ person.id }}/edit{% else %}/persons/new{% endif %}"
+          class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8 space-y-5 shadow-sm">
+
+        <!-- Name -->
         <div>
-            <label class="block text-sm font-medium mb-1">姓名 *</label>
+            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">姓名 *</label>
             <input type="text" name="name" required value="{{ person.name if person else '' }}"
-                   class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
+                   placeholder="如：张三"
+                   class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition"
+                   style="font-size:1.1rem">
         </div>
 
+        <!-- Gender + Blood Type row -->
         <div class="grid grid-cols-2 gap-4">
             <div>
-                <label class="block text-sm font-medium mb-1">性别</label>
-                <select name="gender" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
-                    <option value="">未设置</option>
-                    <option value="F" {{ 'selected' if person and person.gender == 'F' }}>女</option>
-                    <option value="M" {{ 'selected' if person and person.gender == 'M' }}>男</option>
+                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">性别</label>
+                <select name="gender"
+                        class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
+                    <option value="">未选择</option>
+                    <option value="F" {{ 'selected' if person and person.gender == 'F' }}>👩 女</option>
+                    <option value="M" {{ 'selected' if person and person.gender == 'M' }}>👨 男</option>
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">出生日期</label>
-                <input type="date" name="birth_date" value="{{ person.birth_date if person and person.birth_date else '' }}"
-                       class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
-            </div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-4">
-            <div>
-                <label class="block text-sm font-medium mb-1">身高 (cm)</label>
-                <input type="number" name="height_cm" step="0.1" inputmode="decimal"
-                       value="{{ person.height_cm if person and person.height_cm else '' }}"
-                       class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">体重 (kg)</label>
-                <input type="number" name="weight_kg" step="0.1" inputmode="decimal"
-                       value="{{ person.weight_kg if person and person.weight_kg else '' }}"
-                       class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">血型</label>
-                <select name="blood_type" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
-                    <option value="">未设置</option>
-                    {% for bt in ['A', 'B', 'AB', 'O'] %}
-                    <option value="{{ bt }}" {{ 'selected' if person and person.blood_type == bt }}>{{ bt }}</option>
+                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">血型</label>
+                <select name="blood_type"
+                        class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
+                    <option value="">未选择</option>
+                    {% for bt in ['A','B','AB','O'] %}
+                    <option value="{{ bt }}" {{ 'selected' if person and person.blood_type == bt }}>{{ bt }}型</option>
                     {% endfor %}
                 </select>
             </div>
         </div>
 
+        <!-- Birth date -->
         <div>
-            <label class="block text-sm font-medium mb-1">紧急联系人</label>
-            <input type="text" name="emergency_contact"
-                   value="{{ person.emergency_contact if person and person.emergency_contact else '' }}"
-                   class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
+            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">出生日期</label>
+            <input type="date" name="birth_date"
+                   value="{{ person.birth_date if person else '' }}"
+                   class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
         </div>
 
+        <!-- Height + Weight row -->
         <div class="grid grid-cols-2 gap-4">
             <div>
-                <label class="block text-sm font-medium mb-1">常用医院</label>
-                <input type="text" name="preferred_hospital"
-                       value="{{ person.preferred_hospital if person and person.preferred_hospital else '' }}"
-                       class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
+                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">身高 (cm)</label>
+                <input type="number" name="height_cm" min="100" max="220"
+                       value="{{ person.height_cm if person else '' }}"
+                       placeholder="170"
+                       class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">主治医生</label>
-                <input type="text" name="primary_doctor"
-                       value="{{ person.primary_doctor if person and person.primary_doctor else '' }}"
-                       class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
+                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">体重 (kg)</label>
+                <input type="number" name="weight_kg" min="30" max="200" step="0.1"
+                       value="{{ person.weight_kg if person else '' }}"
+                       placeholder="65"
+                       class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
             </div>
         </div>
 
-        <div>
-            <label class="block text-sm font-medium mb-1">备注</label>
-            <textarea name="notes" rows="3"
-                      class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">{{ person.notes if person and person.notes else '' }}</textarea>
+        <!-- Preferred hospital + Primary doctor row -->
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">常用医院</label>
+                <input type="text" name="preferred_hospital"
+                       value="{{ person.preferred_hospital if person else '' }}"
+                       placeholder="如：北京协和医院"
+                       class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">主治医生</label>
+                <input type="text" name="primary_doctor"
+                       value="{{ person.primary_doctor if person else '' }}"
+                       placeholder="如：张医生"
+                       class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
+            </div>
         </div>
 
+        <!-- Notes -->
+        <div>
+            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">备注</label>
+            <textarea name="notes" rows="3"
+                      placeholder="过敏史、慢性病等..."
+                      class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition resize-none">{{ person.notes if person else '' }}</textarea>
+        </div>
+
+        <!-- Actions -->
         <div class="flex gap-3 pt-2">
-            <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                {{ "保存修改" if person else "创建" }}
+            <button type="submit"
+                    class="px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-medium rounded-xl transition shadow-sm">
+                ✓ 保存
             </button>
-            <a href="/persons" class="px-6 py-2 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+            <a href="/persons{% if person %}/{{ person.id }}{% endif %}"
+               class="px-6 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition">
                 取消
             </a>
         </div>

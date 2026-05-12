@@ -1,89 +1,127 @@
 {% extends "base.html" %}
-{% block title %}添加就诊 - ChronoCare{% endblock %}
+{% block title %}{% if visit %}编辑就诊{% else %}新增就诊{% endif %} - ChronoCare{% endblock %}
 
 {% block content %}
 <div class="max-w-2xl mx-auto">
-    <h1 class="text-2xl font-bold mb-6">🏥 添加就诊记录</h1>
+    <div class="mb-6 flex items-center gap-3">
+        <a href="/visits{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition">←</a>
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">
+            {{ '✏️ 编辑就诊' if visit else '🏥 新增就诊' }}
+        </h1>
+    </div>
 
-    <form method="post" class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 space-y-4">
+    <form method="post"
+          action="{% if visit %}/visits/{{ visit.id }}/edit{% else %}/visits/new{% endif %}"
+          class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8 space-y-5 shadow-sm">
+
+        <!-- Person -->
         <div>
-            <label class="block text-sm font-medium mb-1">老人 *</label>
-            <select name="person_id" required class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
+            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">老人 *</label>
+            <select name="person_id" required
+                    class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500 outline-none transition">
                 {% for p in persons %}
-                <option value="{{ p.id }}" {{ 'selected' if selected_person_id == p.id }}>{{ p.name }}</option>
+                <option value="{{ p.id }}" {{ 'selected' if selected_person_id == p.id or (visit and visit.person_id == p.id) }}>
+                    {{ p.name }}
+                </option>
                 {% endfor %}
             </select>
         </div>
 
+        <!-- Date + Type -->
         <div class="grid grid-cols-2 gap-4">
             <div>
-                <label class="block text-sm font-medium mb-1">就诊日期 *</label>
-                <input type="date" name="visit_date" required value="{{ today }}"
-                       class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
+                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">就诊日期 *</label>
+                <input type="date" name="visit_date" required
+                       value="{{ visit.visit_date if visit else '' }}"
+                       class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500 outline-none transition">
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">就诊类型</label>
-                <select name="visit_type" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
-                    <option value="">未分类</option>
-                    <option value="initial">初诊</option>
-                    <option value="followup">复诊</option>
-                    <option value="emergency">急诊</option>
-                    <option value="checkup">体检</option>
+                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">类型</label>
+                <select name="visit_type"
+                        class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500 outline-none transition">
+                    <option value="">请选择</option>
+                    <option value="initial" {{ 'selected' if visit and visit.visit_type == 'initial' }}>初诊</option>
+                    <option value="followup" {{ 'selected' if visit and visit.visit_type == 'followup' }}>复诊</option>
+                    <option value="emergency" {{ 'selected' if visit and visit.visit_type == 'emergency' }}>急诊</option>
+                    <option value="checkup" {{ 'selected' if visit and visit.visit_type == 'checkup' }}>体检</option>
                 </select>
             </div>
         </div>
 
-        <div class="grid grid-cols-3 gap-4">
+        <!-- Hospital + Department -->
+        <div class="grid grid-cols-2 gap-4">
             <div>
-                <label class="block text-sm font-medium mb-1">医院</label>
+                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">医院</label>
                 <input type="text" name="hospital"
-                       class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
+                       value="{{ visit.hospital if visit else '' }}" placeholder="如：北京协和医院"
+                       class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500 outline-none transition">
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">科室</label>
+                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">科室</label>
                 <input type="text" name="department"
-                       class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">医生</label>
-                <input type="text" name="doctor"
-                       class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
+                       value="{{ visit.department if visit else '' }}" placeholder="如：内分泌科"
+                       class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500 outline-none transition">
             </div>
         </div>
 
+        <!-- Doctor -->
         <div>
-            <label class="block text-sm font-medium mb-1">主诉</label>
+            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">医生</label>
+            <input type="text" name="doctor"
+                   value="{{ visit.doctor if visit else '' }}" placeholder="如：张医生"
+                   class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500 outline-none transition">
+        </div>
+
+        <!-- Chief complaint -->
+        <div>
+            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">主诉</label>
             <textarea name="chief_complaint" rows="2"
-                      class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700"></textarea>
+                      placeholder="本次就诊的主要症状..."
+                      class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500 outline-none transition resize-none">{{ visit.chief_complaint if visit else '' }}</textarea>
         </div>
 
+        <!-- Diagnosis -->
         <div>
-            <label class="block text-sm font-medium mb-1">诊断</label>
+            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">诊断</label>
             <textarea name="diagnosis" rows="2"
-                      class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700"></textarea>
+                      placeholder="医生诊断结果..."
+                      class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500 outline-none transition resize-none">{{ visit.diagnosis if visit else '' }}</textarea>
         </div>
 
+        <!-- Prescription -->
         <div>
-            <label class="block text-sm font-medium mb-1">处方</label>
+            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">处方</label>
             <textarea name="prescription" rows="2"
-                      class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700"></textarea>
+                      placeholder="药物处方..."
+                      class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500 outline-none transition resize-none">{{ visit.prescription if visit else '' }}</textarea>
         </div>
 
+        <!-- Doctor advice -->
         <div>
-            <label class="block text-sm font-medium mb-1">医嘱</label>
+            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">医嘱</label>
             <textarea name="doctor_advice" rows="2"
-                      class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700"></textarea>
+                      placeholder="医生建议..."
+                      class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500 outline-none transition resize-none">{{ visit.doctor_advice if visit else '' }}</textarea>
         </div>
 
+        <!-- Next followup -->
         <div>
-            <label class="block text-sm font-medium mb-1">复诊日期</label>
+            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">下次复诊日期</label>
             <input type="date" name="next_followup_date"
-                   class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700">
+                   value="{{ visit.next_followup_date if visit else '' }}"
+                   class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500 outline-none transition">
         </div>
 
+        <!-- Actions -->
         <div class="flex gap-3 pt-2">
-            <button type="submit" class="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition">保存</button>
-            <a href="/visits" class="px-6 py-2 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition">取消</a>
+            <button type="submit"
+                    class="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-xl transition shadow-sm">
+                ✓ 保存
+            </button>
+            <a href="/visits{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}"
+               class="px-6 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                取消
+            </a>
         </div>
     </form>
 </div>

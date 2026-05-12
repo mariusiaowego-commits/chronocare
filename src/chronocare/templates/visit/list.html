@@ -3,68 +3,98 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto">
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold">🏥 就诊记录</h1>
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">🏥 就诊记录</h1>
         <a href="/visits/new{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}"
-           class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition">
+           class="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium transition shadow-sm">
             + 添加就诊
         </a>
     </div>
 
-    <!-- 人员筛选 -->
-    <div class="mb-4 flex gap-2 flex-wrap">
+    <!-- Person filter -->
+    <div class="mb-5 flex gap-2 flex-wrap items-center">
+        <span class="text-sm text-slate-500 mr-1">👤</span>
         <a href="/visits"
-           class="px-3 py-1 rounded-full text-sm {{ 'bg-blue-600 text-white' if not selected_person_id else 'bg-slate-200 dark:bg-slate-700' }}">全部</a>
+           class="px-3 py-1.5 rounded-full text-sm font-medium transition {{ 'bg-teal-600 text-white' if not selected_person_id else 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600' }}">
+            全部
+        </a>
         {% for p in persons %}
         <a href="/visits?person_id={{ p.id }}"
-           class="px-3 py-1 rounded-full text-sm {{ 'bg-blue-600 text-white' if selected_person_id == p.id else 'bg-slate-200 dark:bg-slate-700' }}">{{ p.name }}</a>
+           class="px-3 py-1.5 rounded-full text-sm font-medium transition {{ 'bg-teal-600 text-white' if selected_person_id == p.id else 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600' }}">
+            {{ p.name }}
+        </a>
         {% endfor %}
     </div>
 
     {% if visits %}
-    <div class="space-y-4">
-        {% for v in visits %}
-        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
-            <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center gap-2">
+    <!-- Timeline layout -->
+    <div class="relative">
+        <!-- Vertical timeline line -->
+        <div class="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-700" aria-hidden="true"></div>
+
+        <div class="space-y-5">
+            {% for v in visits %}
+            <div class="card-animate relative flex gap-4">
+                <!-- Timeline dot -->
+                <div class="shrink-0 w-12 h-12 rounded-full bg-teal-100 dark:bg-teal-900/40 border-2 border-teal-300 dark:border-teal-700 flex items-center justify-center z-10">
                     <span class="text-lg">🏥</span>
-                    <span class="font-semibold">{{ v.hospital or '未记录医院' }}</span>
-                    {% if v.department %}
-                    <span class="text-sm text-slate-500">· {{ v.department }}</span>
+                </div>
+
+                <!-- Card -->
+                <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-start justify-between gap-3 mb-2">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h3 class="font-semibold text-slate-800 dark:text-slate-100">{{ v.hospital or '未记录医院' }}</h3>
+                            {% if v.visit_type %}
+                            <span class="px-2 py-0.5 bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 text-xs rounded-full font-medium">
+                                {{ '初诊' if v.visit_type == 'initial' else '复诊' if v.visit_type == 'followup' else '急诊' if v.visit_type == 'emergency' else '体检' }}
+                            </span>
+                            {% endif %}
+                            {% if v.department %}
+                            <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs rounded-full">
+                                {{ v.department }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <span class="text-sm text-slate-400 shrink-0">{{ v.visit_date or '日期不详' }}</span>
+                    </div>
+
+                    {% if v.doctor %}
+                    <p class="text-sm text-slate-500 mb-2">👨‍⚕️ {{ v.doctor }}</p>
                     {% endif %}
-                    {% if v.visit_type %}
-                    <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">
-                        {{ '初诊' if v.visit_type == 'initial' else '复诊' if v.visit_type == 'followup' else '急诊' if v.visit_type == 'emergency' else '体检' }}
-                    </span>
+
+                    {% if v.chief_complaint %}
+                    <p class="text-sm mb-1.5"><span class="font-medium text-slate-600 dark:text-slate-400">主诉:</span> {{ v.chief_complaint }}</p>
+                    {% endif %}
+                    {% if v.diagnosis %}
+                    <p class="text-sm mb-1.5"><span class="font-medium text-slate-600 dark:text-slate-400">诊断:</span> {{ v.diagnosis }}</p>
+                    {% endif %}
+                    {% if v.prescription %}
+                    <p class="text-sm mb-1.5"><span class="font-medium text-slate-600 dark:text-slate-400">处方:</span> {{ v.prescription }}</p>
+                    {% endif %}
+                    {% if v.doctor_advice %}
+                    <p class="text-sm mb-1.5"><span class="font-medium text-slate-600 dark:text-slate-400">医嘱:</span> {{ v.doctor_advice }}</p>
+                    {% endif %}
+
+                    {% if v.next_followup_date %}
+                    <p class="text-sm mt-3 text-teal-600 dark:text-teal-400 font-medium">📅 下次复诊: {{ v.next_followup_date }}</p>
                     {% endif %}
                 </div>
-                <span class="text-sm text-slate-500">{{ v.visit_date }}</span>
             </div>
-            {% if v.doctor %}
-            <p class="text-sm text-slate-600 dark:text-slate-400">👨‍⚕️ {{ v.doctor }}</p>
-            {% endif %}
-            {% if v.chief_complaint %}
-            <p class="text-sm mt-2"><span class="font-medium">主诉:</span> {{ v.chief_complaint }}</p>
-            {% endif %}
-            {% if v.diagnosis %}
-            <p class="text-sm mt-1"><span class="font-medium">诊断:</span> {{ v.diagnosis }}</p>
-            {% endif %}
-            {% if v.prescription %}
-            <p class="text-sm mt-1"><span class="font-medium">处方:</span> {{ v.prescription }}</p>
-            {% endif %}
-            {% if v.doctor_advice %}
-            <p class="text-sm mt-1"><span class="font-medium">医嘱:</span> {{ v.doctor_advice }}</p>
-            {% endif %}
-            {% if v.next_followup_date %}
-            <p class="text-sm mt-2 text-blue-600">📅 复诊: {{ v.next_followup_date }}</p>
-            {% endif %}
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
     {% else %}
-    <div class="text-center py-12 text-slate-500">
-        <p class="text-4xl mb-4">🏥</p>
-        <p>还没有就诊记录</p>
+    <!-- Empty state -->
+    <div class="flex flex-col items-center justify-center py-20 text-slate-400">
+        <span class="text-5xl mb-4">🏥</span>
+        <h2 class="text-lg font-medium text-slate-500 mb-2">还没有就诊记录</h2>
+        <p class="text-sm mb-6">记录就诊信息，方便回顾和管理健康</p>
+        <a href="/visits/new{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}"
+           class="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium transition">
+            + 添加第一条就诊记录
+        </a>
     </div>
     {% endif %}
 </div>
