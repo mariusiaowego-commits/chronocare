@@ -18,6 +18,7 @@ from chronocare.services.medical_record import (
     process_lab_report,
     process_ocr,
     update_medical_record,
+    upload_image,
 )
 
 router = APIRouter(prefix="/api/medical-records", tags=["Medical Records"])
@@ -77,7 +78,6 @@ async def api_delete(record_id: int, db: AsyncSession = Depends(get_db)):
 @router.post("/{record_id}/upload")
 async def api_upload_image(record_id: int, file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
     """Upload an image for a medical record."""
-    # Save uploaded file temporarily
     import os
 
     temp_path = f"/tmp/{file.filename}"
@@ -85,16 +85,38 @@ async def api_upload_image(record_id: int, file: UploadFile = File(...), db: Asy
         content = await file.read()
         f.write(content)
 
-    from chronocare.services.medical_record import upload_image
-
     record = await upload_image(db, record_id, temp_path)
     if record is None:
         raise HTTPException(status_code=404, detail="Record not found")
 
-    # Clean up temp file
     os.remove(temp_path)
 
     return {"message": "Image uploaded successfully", "image_path": record.image_path}
+
+
+@router.post("/{record_id}/process")
+async def api_process_record(record_id: int, db: AsyncSession = Depends(get_db)):
+    """Unified endpoint — auto-routes to the right handler based on record_type.
+
+    - lab_report  → process_lab_report
+    - doctor_order / prescription → process_doctor_order
+    - medical_record              → process_ocr
+    """
+    record = await get_medical_record(db, record_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Record not found")
+
+    rt = record.record_type
+    if rt == "lab_report":
+        result = await process_lab_report(db, record_id)
+    elif rt in ("doctor_order", "prescription"):
+        result = await process_doctor_order(db, record_id)
+    else:
+        result = await process_ocr(db, record_id)
+
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
 
 
 @router.post("/{record_id}/ocr")
