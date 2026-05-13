@@ -1,4 +1,4 @@
-"""Medical record service with OCR placeholder."""
+"""Medical record service — real OCR + LLM pipeline."""
 
 import os
 import shutil
@@ -10,10 +10,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from chronocare.models.medical_record import MedicalRecord
 from chronocare.schemas.medical_record import MedicalRecordCreate, MedicalRecordUpdate
+from chronocare.services.ocr_engine import extract_text, is_ocr_available
+from chronocare.services.ocr_parser import parse_ocr_text
 
 # Upload directory
 UPLOAD_DIR = Path("uploads/medical_records")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# CRUD
+# ---------------------------------------------------------------------------
 
 
 async def create_medical_record(db: AsyncSession, data: MedicalRecordCreate) -> MedicalRecord:
@@ -64,7 +71,6 @@ async def delete_medical_record(db: AsyncSession, record_id: int) -> bool:
     record = await get_medical_record(db, record_id)
     if record is None:
         return False
-    # Delete associated image if exists
     if record.image_path and os.path.exists(record.image_path):
         os.remove(record.image_path)
     await db.delete(record)
@@ -78,7 +84,6 @@ async def upload_image(db: AsyncSession, record_id: int, file_path: str) -> Medi
     if record is None:
         return None
 
-    # Copy file to upload directory
     dest_path = UPLOAD_DIR / f"{record_id}_{Path(file_path).name}"
     shutil.copy2(file_path, dest_path)
 
@@ -88,120 +93,156 @@ async def upload_image(db: AsyncSession, record_id: int, file_path: str) -> Medi
     return record
 
 
-async def process_ocr(db: AsyncSession, record_id: int) -> dict[str, Any]:
-    """Process OCR on a medical record's image (placeholder implementation).
+# ---------------------------------------------------------------------------
+# OCR + LLM pipeline helpers
+# ---------------------------------------------------------------------------
 
-    This is a placeholder that returns mock structured data.
-    In production, integrate with PaddleOCR, Tesseract, or cloud OCR API.
+
+async def _ocr_and_parse(
+    db: AsyncSession,
+    record: MedicalRecord,
+    record_type: str,
+) -> dict[str, Any]:
+    """Run OCR then LLM parsing; persist both ocr_text and structured field.
+
+    Returns a dict that may contain:
+      - ocr_text:      the raw OCR output (always present on success)
+      - structured:    the LLM-parsed result (absent if LLM failed)
+      - error:         friendly error message if OCR was unavailable
+
+    The record is always committed before returning.
     """
-    record = await get_medical_record(db, record_id)
-    if record is None:
-        return {"error": "Record not found"}
+    image_path = record.image_path
 
-    if not record.image_path:
-        return {"error": "No image uploaded"}
+    # 1. OCR — Swift Vision
+    if not await is_ocr_available():
+        return {"error": "OCR服务不可用（Swift或vision_ocr.swift未找到）"}
 
-    # Placeholder OCR result - in production, call actual OCR service
-    mock_ocr_text = "这是OCR识别的占位文本。请集成实际OCR服务。"
-    mock_structured_data = {
-        "diagnosis": ["待OCR识别"],
-        "symptoms": ["待OCR识别"],
-        "treatment": "待OCR识别",
-    }
+    try:
+        raw_text = await extract_text(image_path)
+    except FileNotFoundError:
+        return {"error": f"图片文件不存在: {image_path}"}
+    except TimeoutError as exc:
+        return {"error": f"OCR超时: {exc}"}
+    except RuntimeError as exc:
+        return {"error": f"OCR失败: {exc}"}
 
-    record.ocr_text = mock_ocr_text
-    record.structured_data = mock_structured_data
+    # 2. Persist raw OCR text
+    record.ocr_text = raw_text
+
+    # 3. LLM structural parsing
+    structured = await parse_ocr_text(raw_text, record_type)
+
+    if "error" in structured:
+        # LLM failed — keep ocr_text, mark structured as error marker
+        record.structured_data = {"error": structured["error"]}
+    else:
+        record.structured_data = structured
+
     await db.commit()
     await db.refresh(record)
 
     return {
-        "ocr_text": mock_ocr_text,
-        "structured_data": mock_structured_data,
+        "ocr_text": raw_text,
+        "structured_data": record.structured_data,
     }
+
+
+# ---------------------------------------------------------------------------
+# Public OCR processing functions
+# ---------------------------------------------------------------------------
+
+
+async def process_ocr(db: AsyncSession, record_id: int) -> dict[str, Any]:
+    """Run OCR + LLM parsing for a generic medical record.
+
+    Pipeline: extract_text(image_path) → parse_ocr_text(raw_text, "medical_record")
+    Stores: record.ocr_text + record.structured_data
+    """
+    record = await get_medical_record(db, record_id)
+    if record is None:
+        return {"error": "Record not found"}
+    if not record.image_path:
+        return {"error": "No image uploaded for this record"}
+
+    return await _ocr_and_parse(db, record, "medical_record")
 
 
 async def process_lab_report(db: AsyncSession, record_id: int) -> dict[str, Any]:
-    """Process a lab report image and extract structured lab results (placeholder).
+    """Run OCR + LLM parsing for a lab report.
 
-    In production, this would parse OCR text to extract:
-    - Test name
-    - Value
-    - Unit
-    - Reference range
-    - Status (normal/abnormal)
+    Pipeline: extract_text(image_path) → parse_ocr_text(raw_text, "lab_report")
+    Stores: record.ocr_text + record.lab_results
     """
     record = await get_medical_record(db, record_id)
     if record is None:
         return {"error": "Record not found"}
-
     if not record.image_path:
-        return {"error": "No image uploaded"}
+        return {"error": "No image uploaded for this record"}
 
-    # Placeholder lab results - in production, parse OCR text
-    mock_lab_results = {
-        "tests": [
-            {
-                "name": "空腹血糖",
-                "value": "6.2",
-                "unit": "mmol/L",
-                "reference": "3.9-6.1",
-                "status": "slightly_high",
-            },
-            {
-                "name": "糖化血红蛋白",
-                "value": "6.8",
-                "unit": "%",
-                "reference": "<6.5",
-                "status": "slightly_high",
-            },
-        ],
-        "summary": "血糖指标偏高，建议控制饮食",
-    }
+    image_path = record.image_path
 
-    record.record_type = "lab_report"
-    record.lab_results = mock_lab_results
-    record.ocr_text = "化验单OCR识别占位文本"
+    if not await is_ocr_available():
+        return {"error": "OCR服务不可用（Swift或vision_ocr.swift未找到）"}
+
+    try:
+        raw_text = await extract_text(image_path)
+    except FileNotFoundError:
+        return {"error": f"图片文件不存在: {image_path}"}
+    except TimeoutError as exc:
+        return {"error": f"OCR超时: {exc}"}
+    except RuntimeError as exc:
+        return {"error": f"OCR失败: {exc}"}
+
+    record.ocr_text = raw_text
+    structured = await parse_ocr_text(raw_text, "lab_report")
+
+    if "error" in structured:
+        record.lab_results = {"error": structured["error"]}
+    else:
+        record.lab_results = structured
+
     await db.commit()
     await db.refresh(record)
 
-    return {"lab_results": mock_lab_results}
+    return {"lab_results": record.lab_results}
 
 
 async def process_doctor_order(db: AsyncSession, record_id: int) -> dict[str, Any]:
-    """Process a doctor's order image and extract structured data (placeholder).
+    """Run OCR + LLM parsing for a doctor's order / prescription.
 
-    In production, this would parse OCR text to extract:
-    - Medications prescribed
-    - Dosage and frequency
-    - Duration
-    - Special instructions
+    Pipeline: extract_text(image_path) → parse_ocr_text(raw_text, "doctor_order")
+    Stores: record.ocr_text + record.doctor_orders
     """
     record = await get_medical_record(db, record_id)
     if record is None:
         return {"error": "Record not found"}
-
     if not record.image_path:
-        return {"error": "No image uploaded"}
+        return {"error": "No image uploaded for this record"}
 
-    # Placeholder doctor's orders - in production, parse OCR text
-    mock_doctor_orders = {
-        "medications": [
-            {
-                "name": "二甲双胍",
-                "dosage": "500mg",
-                "frequency": "每日两次",
-                "duration": "长期",
-                "notes": "餐后服用",
-            },
-        ],
-        "lifestyle": ["控制饮食", "适量运动", "定期监测血糖"],
-        "followup": "两周后复诊",
-    }
+    image_path = record.image_path
 
-    record.record_type = "doctor_order"
-    record.doctor_orders = mock_doctor_orders
-    record.ocr_text = "医嘱OCR识别占位文本"
+    if not await is_ocr_available():
+        return {"error": "OCR服务不可用（Swift或vision_ocr.swift未找到）"}
+
+    try:
+        raw_text = await extract_text(image_path)
+    except FileNotFoundError:
+        return {"error": f"图片文件不存在: {image_path}"}
+    except TimeoutError as exc:
+        return {"error": f"OCR超时: {exc}"}
+    except RuntimeError as exc:
+        return {"error": f"OCR失败: {exc}"}
+
+    record.ocr_text = raw_text
+    structured = await parse_ocr_text(raw_text, "doctor_order")
+
+    if "error" in structured:
+        record.doctor_orders = {"error": structured["error"]}
+    else:
+        record.doctor_orders = structured
+
     await db.commit()
     await db.refresh(record)
 
-    return {"doctor_orders": mock_doctor_orders}
+    return {"doctor_orders": record.doctor_orders}
