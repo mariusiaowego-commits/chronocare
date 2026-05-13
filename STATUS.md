@@ -1,6 +1,6 @@
 # ChronoCare STATUS
 
-> 最后更新: 2026-05-12
+> 最后更新: 2026-05-13
 
 ## 当前阶段: v0.4.0 前端重做完成
 
@@ -81,9 +81,9 @@
 
 ## Git
 - 分支: main
-- 工作区: 干净 (无未提交改动)
+- 工作区: 有待提交改动 (见 git status)
 - 最新提交: 8ea1249 merge: T4 前端重写
-- pyproject.toml version: 0.3.0 (需更新为 0.4.0)
+- pyproject.toml version: 0.4.0
 
 ## 开发命令
 ```bash
