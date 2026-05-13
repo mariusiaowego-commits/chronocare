@@ -122,10 +122,10 @@ uv run alembic upgrade head
   - 新增就医记录OCR功能
 
 ## OCR 实现状态
-当前为占位实现 (mock)，需要集成实际OCR服务:
-- PaddleOCR (推荐，中文识别优秀)
-- Tesseract (开源，需安装)
-- 云API (百度/腾讯/阿里云)
+v0.5.0 已集成两层 OCR Pipeline:
+- Layer 1: macOS Vision Framework (scripts/vision_ocr.swift)
+- Layer 2: LLM 结构化解析 (services/ocr_parser.py, OpenRouter/Gemini)
+- 支持4种类型: 就医记录/化验报告/处方/医嘱
 
 ## 注意
 - GitHub push/pull 用 HTTPS URL
