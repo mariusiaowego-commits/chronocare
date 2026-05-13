@@ -85,7 +85,7 @@
     </div>
     {% endif %}
 
-    <!-- OCR结果 -->
+    <!-- OCR原始文本 (所有类型) -->
     {% if record.ocr_text %}
     <div class="section">
         <h2>📝 OCR识别文本</h2>
@@ -93,33 +93,75 @@
     </div>
     {% endif %}
 
-    <!-- 结构化数据 -->
-    {% if record.structured_data %}
+    <!-- 结构化数据: medical_record -->
+    {% if record.structured_data and record.record_type == 'medical_record' %}
+    {% if record.structured_data.error %}
+    <div class="section error-box">
+        <h2>⚠️ 结构化解析失败</h2>
+        <p>{{ record.structured_data.error }}</p>
+    </div>
+    {% else %}
     <div class="section">
         <h2>📊 结构化数据</h2>
-        <pre class="json-data">{{ record.structured_data | tojson(indent=2) }}</pre>
+        {% if record.structured_data.diagnosis %}
+        <div class="data-block">
+            <h3>诊断</h3>
+            <ul class="tag-list">
+                {% for d in record.structured_data.diagnosis %}
+                <li class="tag tag-diagnosis">{{ d }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% if record.structured_data.symptoms %}
+        <div class="data-block">
+            <h3>症状</h3>
+            <ul class="tag-list">
+                {% for s in record.structured_data.symptoms %}
+                <li class="tag tag-symptom">{{ s }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% if record.structured_data.treatment %}
+        <div class="data-block">
+            <h3>治疗方案</h3>
+            <p class="data-value">{{ record.structured_data.treatment }}</p>
+        </div>
+        {% endif %}
+        {% if record.structured_data.followup %}
+        <div class="data-block">
+            <h3>复诊建议</h3>
+            <p class="data-value">{{ record.structured_data.followup }}</p>
+        </div>
+        {% endif %}
     </div>
     {% endif %}
+    {% endif %}
 
-    <!-- 医嘱 -->
+    <!-- 医嘱: doctor_order / prescription -->
     {% if record.doctor_orders %}
     <div class="section">
         <h2>💊 医嘱</h2>
-        <div class="doctor-orders">
+        {% if record.doctor_orders.error %}
+        <div class="error-box">
+            <p>⚠️ 解析失败: {{ record.doctor_orders.error }}</p>
+        </div>
+        {% else %}
             {% if record.doctor_orders.medications %}
             <h3>用药</h3>
-            <table>
+            <table class="med-table">
                 <thead>
                     <tr><th>药品</th><th>剂量</th><th>频率</th><th>疗程</th><th>备注</th></tr>
                 </thead>
                 <tbody>
                     {% for med in record.doctor_orders.medications %}
                     <tr>
-                        <td>{{ med.name }}</td>
+                        <td class="med-name">{{ med.name }}</td>
                         <td>{{ med.dosage }}</td>
                         <td>{{ med.frequency }}</td>
                         <td>{{ med.duration }}</td>
-                        <td>{{ med.notes or '' }}</td>
+                        <td class="med-notes">{{ med.notes or '' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -127,42 +169,65 @@
             {% endif %}
             {% if record.doctor_orders.lifestyle %}
             <h3>生活建议</h3>
-            <ul>
+            <ul class="advice-list">
                 {% for item in record.doctor_orders.lifestyle %}
                 <li>{{ item }}</li>
                 {% endfor %}
             </ul>
             {% endif %}
             {% if record.doctor_orders.followup %}
-            <h3>复诊安排</h3>
-            <p>{{ record.doctor_orders.followup }}</p>
+            <div class="followup-box">
+                <strong>复诊安排:</strong> {{ record.doctor_orders.followup }}
+            </div>
             {% endif %}
-        </div>
+            {% if record.doctor_orders.special_instructions and record.doctor_orders.special_instructions != '未提及' %}
+            <div class="special-box">
+                <strong>特殊医嘱:</strong> {{ record.doctor_orders.special_instructions }}
+            </div>
+            {% endif %}
+        {% endif %}
     </div>
     {% endif %}
 
-    <!-- 化验结果 -->
+    <!-- 化验结果: lab_report -->
     {% if record.lab_results %}
     <div class="section">
         <h2>🧪 化验结果</h2>
-        {% if record.lab_results.tests %}
-        <table>
+        {% if record.lab_results.error %}
+        <div class="error-box">
+            <p>⚠️ 解析失败: {{ record.lab_results.error }}</p>
+        </div>
+        {% elif record.lab_results.tests %}
+        <table class="lab-table">
             <thead>
-                <tr><th>项目</th><th>结果</th><th>单位</th><th>参考范围</th><th>状态</th></tr>
+                <tr>
+                    <th>项目</th>
+                    <th>结果</th>
+                    <th>单位</th>
+                    <th>参考范围</th>
+                    <th>状态</th>
+                </tr>
             </thead>
             <tbody>
                 {% for test in record.lab_results.tests %}
-                <tr class="{{ 'abnormal' if test.status != 'normal' else '' }}">
-                    <td>{{ test.name }}</td>
-                    <td>{{ test.value }}</td>
-                    <td>{{ test.unit }}</td>
-                    <td>{{ test.reference }}</td>
+                <tr class="status-{{ test.status }}">
+                    <td class="test-name">{{ test.name }}</td>
+                    <td class="test-value">{{ test.value }}</td>
+                    <td class="test-unit">{{ test.unit }}</td>
+                    <td class="test-ref">{{ test.reference }}</td>
                     <td>
-                        {% if test.status == 'normal' %}正常
-                        {% elif test.status == 'slightly_high' %}偏高
-                        {% elif test.status == 'slightly_low' %}偏低
-                        {% elif test.status == 'high' %}高
-                        {% elif test.status == 'low' %}低
+                        {% if test.status == 'normal' %}
+                        <span class="status-badge status-normal">正常</span>
+                        {% elif test.status == 'slightly_high' %}
+                        <span class="status-badge status-slightly-high">轻微偏高</span>
+                        {% elif test.status == 'high' %}
+                        <span class="status-badge status-high">偏高</span>
+                        {% elif test.status == 'slightly_low' %}
+                        <span class="status-badge status-slightly-low">轻微偏低</span>
+                        {% elif test.status == 'low' %}
+                        <span class="status-badge status-low">偏低</span>
+                        {% else %}
+                        <span class="status-badge">{{ test.status or '未知' }}</span>
                         {% endif %}
                     </td>
                 </tr>
@@ -170,17 +235,19 @@
             </tbody>
         </table>
         {% endif %}
-        {% if record.lab_results.summary %}
-        <p class="summary"><strong>总结:</strong> {{ record.lab_results.summary }}</p>
+        {% if record.lab_results.summary and record.lab_results.summary != '未提及' %}
+        <div class="summary-box">
+            <strong>总结:</strong> {{ record.lab_results.summary }}
+        </div>
         {% endif %}
     </div>
     {% endif %}
 </div>
 
 <style>
-.container { max-width: 900px; margin: 0 auto; padding: 20px; }
-.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.actions { display: flex; gap: 8px; }
+.container { max-width: 960px; margin: 0 auto; padding: 20px; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 8px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .detail-card { background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
 .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .info-item label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
@@ -188,19 +255,63 @@
 .full-width { grid-column: 1 / -1; }
 .section { background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
 .section h2 { margin-top: 0; }
-.badge-medical_record { background: #e3f2fd; color: #1565c0; padding: 4px 8px; border-radius: 4px; }
-.badge-lab_report { background: #f3e5f5; color: #7b1fa2; padding: 4px 8px; border-radius: 4px; }
-.badge-prescription { background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; }
-.badge-doctor_order { background: #fff3e0; color: #ef6c00; padding: 4px 8px; border-radius: 4px; }
-.btn { padding: 8px 16px; border-radius: 4px; text-decoration: none; display: inline-block; cursor: pointer; border: 1px solid #ddd; background: white; }
+.section h3 { font-size: 15px; color: #555; margin-bottom: 8px; }
+
+/* Record type badges */
+.badge-medical_record { background: #e3f2fd; color: #1565c0; padding: 4px 10px; border-radius: 12px; font-size: 14px; }
+.badge-lab_report { background: #f3e5f5; color: #7b1fa2; padding: 4px 10px; border-radius: 12px; font-size: 14px; }
+.badge-prescription { background: #e8f5e9; color: #2e7d32; padding: 4px 10px; border-radius: 12px; font-size: 14px; }
+.badge-doctor_order { background: #fff3e0; color: #ef6c00; padding: 4px 10px; border-radius: 12px; font-size: 14px; }
+
+/* Buttons */
+.btn { padding: 8px 16px; border-radius: 4px; text-decoration: none; display: inline-block; cursor: pointer; border: 1px solid #ddd; background: white; font-size: 14px; }
 .btn-danger { color: #d32f2f; border-color: #d32f2f; }
-.ocr-text { background: #f5f5f5; padding: 12px; border-radius: 4px; white-space: pre-wrap; }
-.json-data { background: #f5f5f5; padding: 12px; border-radius: 4px; overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }
-th { background: #f5f5f5; }
-tr.abnormal { background: #fff3e0; }
-.summary { margin-top: 16px; padding: 12px; background: #e3f2fd; border-radius: 4px; }
-.ocr-actions { display: flex; gap: 8px; }
+
+/* OCR text */
+.ocr-text { background: #f8f9fa; padding: 12px; border-radius: 4px; white-space: pre-wrap; font-size: 14px; border: 1px solid #e9ecef; max-height: 300px; overflow-y: auto; }
+
+/* Data blocks for medical_record */
+.data-block { margin-bottom: 12px; }
+.data-value { font-size: 15px; color: #333; }
+.tag-list { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { padding: 3px 10px; border-radius: 12px; font-size: 13px; }
+.tag-diagnosis { background: #e3f2fd; color: #1565c0; }
+.tag-symptom { background: #fff3e0; color: #e65100; }
+
+/* Medication table */
+.med-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+.med-table th, .med-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+.med-table th { background: #f5f5f5; font-size: 13px; color: #666; }
+.med-name { font-weight: 500; color: #1565c0; }
+.med-notes { font-size: 13px; color: #888; }
+
+/* Lab results table */
+.lab-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+.lab-table th, .lab-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+.lab-table th { background: #f5f5f5; font-size: 13px; color: #666; }
+.test-name { font-weight: 500; }
+.test-value { font-size: 15px; font-weight: 600; }
+.test-unit, .test-ref { font-size: 13px; color: #666; }
+
+/* Status row highlighting */
+tr.status-slightly_high, tr.status-high { background: #fff3f3; }
+tr.status-slightly_low, tr.status-low { background: #fffbf0; }
+
+/* Status badges */
+.status-badge { padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; display: inline-block; }
+.status-normal { background: #e8f5e9; color: #2e7d32; }
+.status-slightly-high, .status-high { background: #ffebee; color: #c62828; }
+.status-slightly-low, .status-low { background: #fff8e1; color: #e65100; }
+
+/* Advice and followup boxes */
+.advice-list { padding-left: 20px; }
+.advice-list li { margin-bottom: 4px; }
+.followup-box { margin-top: 12px; padding: 10px 14px; background: #e3f2fd; border-radius: 6px; font-size: 14px; }
+.special-box { margin-top: 8px; padding: 10px 14px; background: #fff3e0; border-radius: 6px; font-size: 14px; }
+.summary-box { margin-top: 12px; padding: 12px 16px; background: #f5f5f5; border-radius: 6px; font-size: 14px; }
+.error-box { padding: 12px 16px; background: #ffebee; border: 1px solid #ffcdd2; border-radius: 6px; color: #c62828; }
+
+/* OCR actions */
+.ocr-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 </style>
 {% endblock %}
