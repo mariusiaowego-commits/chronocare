@@ -1,6 +1,6 @@
 """Tests for ocr_parser service."""
 
-import pytest
+import json
 
 from chronocare.services.ocr_parser import (
     VALID_RECORD_TYPES,
@@ -31,7 +31,9 @@ class TestParseJsonRobust:
         assert _parse_json_robust('{"a": 1}') == {"a": 1}
 
     def test_with_code_fences(self) -> None:
-        text = '```json\n{"tests": [{"name": "空腹血糖", "value": "6.2", "unit": "mmol/L", "reference": "3.9-6.1", "status": "slightly_high"}]}\n```'
+        data = {"name": "空腹血糖", "value": "6.2", "unit": "mmol/L",
+                "reference": "3.9-6.1", "status": "slightly_high"}
+        text = f'```json\n{{"tests": [{json.dumps(data, ensure_ascii=False)}]}}\n```'
         result = _parse_json_robust(text)
         assert result["tests"][0]["name"] == "空腹血糖"
         assert result["tests"][0]["status"] == "slightly_high"
@@ -41,7 +43,9 @@ class TestParseJsonRobust:
         assert result == {"a": 1}
 
     def test_nested_json(self) -> None:
-        text = '```json\n{"diagnosis": ["糖尿病"], "tests": [{"name": "血糖", "value": "6.2", "unit": "mmol/L", "reference": "3.9-6.1", "status": "slightly_high"}]}\n```'
+        data = {"name": "血糖", "value": "6.2", "unit": "mmol/L",
+                "reference": "3.9-6.1", "status": "slightly_high"}
+        text = f'```json\n{{"diagnosis": ["糖尿病"], "tests": [{json.dumps(data, ensure_ascii=False)}]}}\n```'
         result = _parse_json_robust(text)
         assert result["diagnosis"] == ["糖尿病"]
 
