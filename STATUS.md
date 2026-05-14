@@ -1,8 +1,8 @@
 # ChronoCare STATUS
 
-> 最后更新: 2026-05-13
+> 最后更新: 2026-05-14
 
-## 当前阶段: v0.5.0 OCR Pipeline 完成
+## 当前阶段: v0.5.0 血糖趋势分析 + Hermes Skill
 
 ## 版本历史
 | 版本 | 日期 | 说明 |
@@ -23,6 +23,13 @@
 - BloodSugarRecord 模型
 - 空腹/餐后/睡前/随机 四种测量时机
 - CRUD: API + 页面 (list/form)
+- **趋势分析** (v0.5.0 新增):
+  - 移动平均 (7天/14天)
+  - 线性回归预测
+  - TIR (Time in Range) 计算
+  - CV (变异系数)
+  - 智能预警 (连续高/低血糖)
+  - Chart.js 可视化 (折线图 + 饼图)
 
 ### 3. 就诊记录 ✅
 - Visit 模型
@@ -49,6 +56,17 @@
 - API: POST /api/backup, POST /api/backup/restore, GET /api/backup/status
 
 ## v0.5.0 改动摘要
+
+### 血糖趋势分析 (2026-05-14)
+- src/chronocare/schemas/blood_sugar.py — 新增 BloodSugarTrend schema
+- src/chronocare/services/blood_sugar.py — 新增 get_blood_sugar_trend(), get_blood_sugar_chart_data()
+- src/chronocare/routers/api/blood_sugar.py — 新增 /api/blood-sugar/trend/{person_id}, /api/blood-sugar/chart-data/{person_id}
+- src/chronocare/routers/pages/blood_sugar.py — 新增 /blood-sugar/trend 页面路由
+- src/chronocare/templates/blood_sugar/trend.html — 趋势分析可视化模板
+- src/chronocare/templates/base.html — 新增趋势分析导航链接
+
+### Vision OCR 引擎 (2026-05-14)
+- src/chronocare/services/vision_ocr.py — OpenRouter Vision API OCR 引擎 (跨平台)
 
 ### OCR Pipeline (T1-T4)
 - scripts/vision_ocr.swift — macOS Vision OCR (中英文)
