@@ -59,3 +59,25 @@ async def api_update(record_id: int, data: BloodSugarUpdate, db: AsyncSession = 
 async def api_delete(record_id: int, db: AsyncSession = Depends(get_db)):
     if not await delete_blood_sugar(db, record_id):
         raise HTTPException(status_code=404, detail="Record not found")
+
+
+@router.get("/trend/{person_id}", response_model=dict)
+async def api_trend(
+    person_id: int,
+    days: int = Query(30, ge=1, le=365),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取血糖趋势分析"""
+    from chronocare.services.blood_sugar import get_blood_sugar_trend
+    return await get_blood_sugar_trend(db, person_id, days)
+
+
+@router.get("/chart-data/{person_id}", response_model=dict)
+async def api_chart_data(
+    person_id: int,
+    days: int = Query(14, ge=1, le=90),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取血糖趋势图表数据"""
+    from chronocare.services.blood_sugar import get_blood_sugar_chart_data
+    return await get_blood_sugar_chart_data(db, person_id, days)

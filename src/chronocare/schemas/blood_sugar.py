@@ -30,3 +30,21 @@ class BloodSugarRead(BloodSugarBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
     created_at: datetime
+
+
+class BloodSugarTrend(BaseModel):
+    """血糖趋势分析结果"""
+    person_id: int
+    days: int
+    avg_value: float
+    min_value: float
+    max_value: float
+    std_dev: float
+    cv: float  # 变异系数
+    tir: float  # 目标范围时间百分比 (3.9-10.0 mmol/L)
+    moving_avg_7d: float | None = None
+    moving_avg_14d: float | None = None
+    trend_direction: str  # "rising", "falling", "stable"
+    trend_slope: float  # 线性回归斜率 (mmol/L/天)
+    prediction_7d: float | None = None  # 7天后预测值
+    alerts: list[dict] = []

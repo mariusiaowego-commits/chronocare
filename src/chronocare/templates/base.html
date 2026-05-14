@@ -78,8 +78,14 @@
                 <a href="/blood-sugar"
                    hx-boost="true"
                    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                          {{ 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300' if '/blood-sugar' in request.path else 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
+                          {{ 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300' if request.path == '/blood-sugar' else 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
                     🩸 血糖监控
+                </a>
+                <a href="/blood-sugar/trend"
+                   hx-boost="true"
+                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                          {{ 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300' if '/blood-sugar/trend' in request.path else 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700' }}">
+                    📈 趋势分析
                 </a>
                 <a href="/visits"
                    hx-boost="true"
