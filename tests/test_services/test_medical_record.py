@@ -168,7 +168,7 @@ async def test_get_nonexistent_record_returns_404(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_ocr_no_api_key_returns_error_in_body_not_500(client: AsyncClient, create_person):
-    """When OPENROUTER_API_KEY is missing, error appears in response body (friendly handling)."""
+    """When Swift_API_KEY is missing, error appears in response body (friendly handling)."""
     record = await create_record(client, create_person["id"], "medical_record")
 
     from chronocare.models.medical_record import MedicalRecord
@@ -201,14 +201,14 @@ async def test_ocr_no_api_key_returns_error_in_body_not_500(client: AsyncClient,
         ) as mock_parse:
             mock_avail.return_value = True
             mock_extract.return_value = "这是一段测试OCR文字"
-            mock_parse.return_value = {"error": "OPENROUTER_API_KEY is not set"}
+            mock_parse.return_value = {"error": "Swift_API_KEY is not set"}
 
             resp = await client.post(f"/api/medical-records/{record['id']}/ocr")
             # OCR text is preserved even when LLM parsing fails
             assert resp.status_code == 200
             body = resp.json()
             assert "error" in body.get("structured_data", {})
-            assert "OPENROUTER_API_KEY" in body["structured_data"]["error"]
+            assert "Swift_API_KEY" in body["structured_data"]["error"]
     finally:
         app.dependency_overrides.pop(get_db, None)
 

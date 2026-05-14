@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% block title %}血糖趋势分析 - ChronoCare{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function initTrendChart(labels, values, alerts) {
+    const ctx = document.getElementById('trendChart');
+    if (!ctx || !labels.length) return;
+    if (window._trendChart) window._trendChart.destroy();
+    
+    const colors = values.map(v =>
+        v > 11.1 ? 'rgb(239,68,68)' : v > 7.8 ? 'rgb(245,158,11)' : v < 3.9 ? 'rgb(59,130,246)' : 'rgb(20,184,166)'
+    );
+    
+    window._trendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '血糖 mmol/L',
+                data: values,
+                borderColor: 'rgb(14,165,233)',
+                backgroundColor: 'rgba(14,165,233,0.1)',
+                borderWidth: 2,
+                pointBackgroundColor: colors,
+                pointRadius: 4,
+                fill: true,
+                tension: 0.3,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { min: 0, max: 20, grid: { color: 'rgba(148,163,184,0.15)' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+function initDistributionChart(tir) {
+    const ctx = document.getElementById('distributionChart');
+    if (!ctx) return;
+    if (window._distributionChart) window._distributionChart.destroy();
+    
+    const inRange = tir;
+    const outRange = 100 - tir;
+    
+    window._distributionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['目标范围内', '目标范围外'],
+            datasets: [{
+                data: [inRange, outRange],
+                backgroundColor: ['#22c55e', '#ef4444'],
+                borderWidth: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { font: { size: 12 } } }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">📈 血糖趋势分析</h1>
+        <a href="/blood-sugar{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}"
+           class="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-medium transition hover:bg-slate-300 dark:hover:bg-slate-600">
+            ← 返回列表
+        </a>
+    </div>
+
+    <!-- Person filter pills -->
+    <div class="mb-5 flex gap-2 flex-wrap items-center">
+        <span class="text-sm text-slate-500 mr-1">👤</span>
+        <a href="/blood-sugar/trend?days={{ days }}"
+           class="px-3 py-1.5 rounded-full text-sm font-medium transition {{ 'bg-sky-600 text-white' if not selected_person_id else 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600' }}">
+            全部
+        </a>
+        {% for p in persons %}
+        <a href="/blood-sugar/trend?person_id={{ p.id }}&days={{ days }}"
+           class="px-3 py-1.5 rounded-full text-sm font-medium transition {{ 'bg-sky-600 text-white' if selected_person_id == p.id else 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600' }}">
+            {{ p.name }}
+        </a>
+        {% endfor %}
+    </div>
+
+    {% if trend %}
+    <!-- Days filter -->
+    <div class="mb-5 flex gap-2 flex-wrap items-center">
+        <span class="text-sm text-slate-500 mr-1">📅</span>
+        {% for d in [7, 14, 30, 60, 90] %}
+        <a href="/blood-sugar/trend?{% if selected_person_id %}person_id={{ selected_person_id }}&{% endif %}days={{ d }}"
+           class="px-3 py-1.5 rounded-full text-sm font-medium transition {{ 'bg-emerald-600 text-white' if days == d else 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600' }}">
+            {{ d }}天
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- Alerts -->
+    {% if trend.alerts %}
+    <div class="mb-6 space-y-2">
+        {% for alert in trend.alerts %}
+        <div class="flex items-center gap-3 p-3 rounded-xl border
+            {% if alert.severity == 'critical' %}bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800
+            {% elif alert.severity == 'high' %}bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800
+            {% else %}bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800{% endif %}">
+            <span class="text-lg">{{ alert.icon }}</span>
+            <span class="text-sm font-medium
+                {% if alert.severity == 'critical' %}text-red-700 dark:text-red-300
+                {% elif alert.severity == 'high' %}text-orange-700 dark:text-orange-300
+                {% else %}text-yellow-700 dark:text-yellow-300{% endif %}">
+                {{ alert.message }}
+            </span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm">
+            <div class="text-xs text-slate-500 mb-1">平均值</div>
+            <div class="text-2xl font-bold
+                {% if trend.avg_value > 11.1 %}text-red-600
+                {% elif trend.avg_value > 7.8 %}text-amber-500
+                {% else %}text-teal-600{% endif %}">
+                {{ trend.avg_value }}
+            </div>
+            <div class="text-xs text-slate-400">mmol/L</div>
+        </div>
+        <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm">
+            <div class="text-xs text-slate-500 mb-1">波动系数 (CV)</div>
+            <div class="text-2xl font-bold
+                {% if trend.cv > 36 %}text-amber-500
+                {% elif trend.cv > 50 %}text-red-600
+                {% else %}text-teal-600{% endif %}">
+                {{ trend.cv }}%
+            </div>
+            <div class="text-xs text-slate-400">
+                {% if trend.cv <= 20 %}非常稳定
+                {% elif trend.cv <= 36 %}稳定
+                {% elif trend.cv <= 50 %}波动较大
+                {% else %}波动过大{% endif %}
+            </div>
+        </div>
+        <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm">
+            <div class="text-xs text-slate-500 mb-1">目标范围 (TIR)</div>
+            <div class="text-2xl font-bold
+                {% if trend.tir >= 70 %}text-teal-600
+                {% elif trend.tir >= 50 %}text-amber-500
+                {% else %}text-red-600{% endif %}">
+                {{ trend.tir }}%
+            </div>
+            <div class="text-xs text-slate-400">3.9-10.0 mmol/L</div>
+        </div>
+        <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm">
+            <div class="text-xs text-slate-500 mb-1">趋势方向</div>
+            <div class="text-2xl font-bold
+                {% if trend.trend_direction == 'rising' %}text-red-600
+                {% elif trend.trend_direction == 'falling' %}text-teal-600
+                {% else %}text-slate-600{% endif %}">
+                {% if trend.trend_direction == 'rising' %}↑ 上升
+                {% elif trend.trend_direction == 'falling' %}↓ 下降
+                {% else %}→ 稳定{% endif %}
+            </div>
+            <div class="text-xs text-slate-400">
+                {% if trend.prediction_7d %}7天后: {{ trend.prediction_7d }}{% else %}&nbsp;{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <!-- Trend Chart -->
+        <div class="lg:col-span-2 card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-slate-700 dark:text-slate-200">📈 血糖趋势</h3>
+                <div class="flex gap-2 text-xs">
+                    {% if trend.moving_avg_7d %}
+                    <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
+                        7天均值: {{ trend.moving_avg_7d }}
+                    </span>
+                    {% endif %}
+                    {% if trend.moving_avg_14d %}
+                    <span class="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded">
+                        14天均值: {{ trend.moving_avg_14d }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div style="height:250px">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Distribution Chart -->
+        <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+            <h3 class="font-semibold text-slate-700 dark:text-slate-200 mb-4">🎯 目标范围分布</h3>
+            <div style="height:200px">
+                <canvas id="distributionChart"></canvas>
+            </div>
+            <div class="mt-4 text-center">
+                <div class="text-sm text-slate-500">目标范围内时间</div>
+                <div class="text-3xl font-bold
+                    {% if trend.tir >= 70 %}text-teal-600
+                    {% elif trend.tir >= 50 %}text-amber-500
+                    {% else %}text-red-600{% endif %}">
+                    {{ trend.tir }}%
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Stats -->
+    <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+        <h3 class="font-semibold text-slate-700 dark:text-slate-200 mb-4">📊 详细统计</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+                <div class="text-xs text-slate-500">最小值</div>
+                <div class="text-lg font-bold text-teal-600">{{ trend.min_value }} <span class="text-xs font-normal text-slate-400">mmol/L</span></div>
+            </div>
+            <div>
+                <div class="text-xs text-slate-500">最大值</div>
+                <div class="text-lg font-bold
+                    {% if trend.max_value > 11.1 %}text-red-600
+                    {% elif trend.max_value > 7.8 %}text-amber-500
+                    {% else %}text-teal-600{% endif %}">
+                    {{ trend.max_value }} <span class="text-xs font-normal text-slate-400">mmol/L</span>
+                </div>
+            </div>
+            <div>
+                <div class="text-xs text-slate-500">标准差</div>
+                <div class="text-lg font-bold text-slate-600">{{ trend.std_dev }} <span class="text-xs font-normal text-slate-400">mmol/L</span></div>
+            </div>
+            <div>
+                <div class="text-xs text-slate-500">趋势斜率</div>
+                <div class="text-lg font-bold
+                    {% if trend.trend_slope > 0.05 %}text-red-600
+                    {% elif trend.trend_slope < -0.05 %}text-teal-600
+                    {% else %}text-slate-600{% endif %}">
+                    {{ trend.trend_slope }} <span class="text-xs font-normal text-slate-400">/天</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Empty state -->
+    <div class="flex flex-col items-center justify-center py-20 text-slate-400">
+        <span class="text-5xl mb-4">📈</span>
+        <h2 class="text-lg font-medium text-slate-500 mb-2">请选择人员查看趋势分析</h2>
+        <p class="text-sm mb-6">选择上方的人员筛选器开始分析</p>
+    </div>
+    {% endif %}
+</div>
+
+{% if trend and chart_labels_json != "[]" %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    initTrendChart({{ chart_labels_json | safe }}, {{ chart_values_json | safe }}, {{ chart_alerts_json | safe }});
+    initDistributionChart({{ trend.tir }});
+});
+</script>
+{% endif %}
+{% endblock %}

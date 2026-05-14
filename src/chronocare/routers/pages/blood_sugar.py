@@ -85,3 +85,40 @@ async def blood_sugar_create(request: Request, db: AsyncSession = Depends(get_db
     resp = RedirectResponse(url=f"/blood-sugar?person_id={data.person_id}", status_code=303)
     resp.headers["X-Toast"] = "血糖已记录|success"
     return resp
+
+
+@router.get("/blood-sugar/trend", response_class=HTMLResponse)
+async def blood_sugar_trend(
+    request: Request,
+    person_id: int | None = Query(None),
+    days: int = Query(30, ge=1, le=365),
+    db: AsyncSession = Depends(get_db),
+):
+    """血糖趋势分析页面"""
+    import json
+    
+    persons = await list_persons(db)
+    trend_data = None
+    
+    chart_labels_json = "[]"
+    chart_values_json = "[]"
+    chart_alerts_json = "[]"
+    
+    if person_id:
+        from chronocare.services.blood_sugar import get_blood_sugar_chart_data, get_blood_sugar_trend
+        trend_data = await get_blood_sugar_trend(db, person_id, days)
+        chart_data = await get_blood_sugar_chart_data(db, person_id, min(days, 30))
+        chart_labels_json = json.dumps(chart_data["labels"])
+        chart_values_json = json.dumps(chart_data["values"])
+        chart_alerts_json = json.dumps(chart_data["alerts"])
+    
+    return templates.TemplateResponse(request, "blood_sugar/trend.html", {
+        "request": request,
+        "persons": persons,
+        "selected_person_id": person_id,
+        "days": days,
+        "trend": trend_data,
+        "chart_labels_json": chart_labels_json,
+        "chart_values_json": chart_values_json,
+        "chart_alerts_json": chart_alerts_json,
+    })
