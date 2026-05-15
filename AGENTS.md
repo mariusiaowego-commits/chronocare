@@ -137,3 +137,29 @@ v0.5.0 已集成两层 OCR Pipeline:
 - DEV_PLAN.md — 项目根目录
 - vibe-coding-log/ — 项目根目录，按日期记录
 - wiki — `hermes-base/projects/project-chronocare.md`
+
+## Session 收尾规范 (强制)
+
+每次 session 结束前，必须检查并更新以下文件，缺一不可：
+
+### 触发条件
+满足任一即触发收尾流程：
+1. 有新的 git commits
+2. STATUS.md 内容发生变化
+3. 新增/删除功能模块
+4. 版本号变更
+
+### 必须执行的步骤
+1. **STATUS.md** — 反映当前实际状态
+2. **handoff 文件** — 命名 `YYMMDD-handoff.md`，内容必须包含：
+   - 当前版本号和分支状态
+   - 本次 session 所有变更摘要
+   - 待处理事项（勾选已完成的，保留未完成的）
+   - 关键文件表
+3. **vibe-coding-log** — 按日期记录当日开发内容
+4. **git push** — 确保所有 commits 推送到 origin
+
+### 防漂移规则
+- handoff 文件日期必须 >= STATUS.md 最后更新日期
+- 如果 handoff 日期 < STATUS.md 日期，说明 handoff 过期，必须立即更新
+- 晨检 cron 也会检查 handoff 新鲜度
