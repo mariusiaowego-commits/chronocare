@@ -1,56 +1,67 @@
-# Handoff — 2026-05-18
+---
+date: 2026-05-18
+status: complete
+version: v0.5.0
+---
 
-## 1. 当前状态
+# Session Handoff — 2026-05-18
 
-ChronoCare v0.5.0，main 分支。41/41 tests 通过（原27 + 新14规范化测试）。工作区有未提交改动。
+## 本次 session 变更
 
-## 2. 本次 Session 变更
+### 1. 生产验收 (T0-T5 全部通过)
+- T0: 服务启动 OK，测试 27/27 passed，DB 清空
+- T1: 钱精华档案创建 OK，2型糖尿病慢性病 OK
+- T2: 21条血糖数据录入 OK，趋势分析页 OK (TIR 80.95%, CV 25.95%)
+- T3: 就诊记录创建 OK
+- T4: Swift OCR 化验单识别 OK，3项异常三重高亮 OK
+- T5: Dashboard 四区域全部渲染正确
 
-### chronocare-ocr Skill 创建 ✅
+### 2. OCR 方案 A 实施
+**决策**: 应用不依赖 OPENROUTER_API_KEY，OCR 全部走 hermes agent 层面 vision_analyze
+
+**改动**:
+- `src/chronocare/services/ocr_parser.py` — 无 key 时降级返回 error 结构，不抛异常
+- `src/chronocare/services/medical_record.py` — 新增 normalize_lab_results/normalize_doctor_orders/normalize_structured_data，自动转换 vision_analyze 输出格式
+- `tests/test_normalize.py` — 14 个规范化测试 (41/41 passed)
+- `.gitignore` — 添加 uploads/ 排除
+
+**Skill 创建**: `chronocare-ocr` (harness)
+- 定义完整 agent 层面 OCR 工作流：prompt 模板 + 字段映射 + API 调用
 - 路径: `~/.hermes/profiles/scout/skills/projects/chronocare-ocr/SKILL.md`
-- 定义方案 A 完整流程: agent 层面 vision_analyze → 规范化 → API 写入
-- 包含: 3种类型 prompt 模板、字段映射规则、API 调用模板、多页处理、验收清单
 
-### ocr_parser.py 降级处理 ✅
-- 无 OPENROUTER_API_KEY 时不再抛 ValueError
-- 改为返回 `{"error": "..."}` JSON，graceful degradation
-- 文件: `src/chronocare/services/ocr_parser.py` line 180
+### 3. 文档更新
+- STATUS.md — 更新至 v0.5.0 验收通过
+- DEV_PLAN.md — 无变更（当前阶段已完成）
+- vibe-coding-log/2026-05-18.md — 记录验收+方案A实施
 
-### 输出格式规范化层 ✅
-- 新增 `normalize_lab_results()` — 支持 vision_analyze 输出变体
-- 新增 `normalize_doctor_orders()` — 补全缺失字段
-- 新增 `normalize_structured_data()` — 补全缺失字段
-- 集成到 `update_medical_record()` (PUT API 入口)
-- 集成到内部 pipeline (`_ocr_and_parse`, `process_lab_report`, `process_doctor_order`)
-- 文件: `src/chronocare/services/medical_record.py`
-- 新增测试: `tests/test_normalize.py` (14 tests)
+## 当前状态
 
-### 关键 Bug 修复
-- **P1 格式适配**: vision_analyze `{lab_items: [...]}` 自动转换为 `{tests: [...]}`
-- **P1 崩溃修复**: 无 API key 时 pipeline 不再崩溃
-- **status 映射**: 支持中文/英文/符号（偏高/↑/elevated → high）
+| 项 | 状态 |
+|---|---|
+| 版本 | v0.5.0 |
+| 分支 | main |
+| 测试 | 41/41 passed |
+| 工作区 | 干净 |
+| 最后 commit | c1501a4 |
+| 数据库 | 有验收数据 (person_id=1 钱精华) |
 
-## 3. 待处理事项
+## 未完成事项
 
-- [ ] git commit + push 本次改动
-- [ ] 端到端验证: 用真实化验单图片走一遍 chronocare-ocr skill
-- [ ] 多页化验单支持 (P2)
-- [ ] iPad 实机测试 (P2)
-- [ ] DESIGN.md 设计落地 (P2)
+### P1
+- [ ] 用真实化验单图片走一遍 chronocare-ocr skill 流程验证
+- [ ] 多页化验单支持：PDF 转图片后连续识别和合并
 
-## 4. 关键文件
+### P2
+- [ ] iPad 实机测试 (viewport 无边界)
+- [ ] DESIGN.md 设计落地
+- [ ] 重构 ruff 警告清理 (B007/UP015)
+- [ ] 清理 DB 测试数据前先备份
 
-| 文件 | 本次改动 |
-|------|---------|
-| src/chronocare/services/ocr_parser.py | 降级处理 |
-| src/chronocare/services/medical_record.py | 规范化层 |
-| tests/test_normalize.py | 新增 14 tests |
-| SKILL: chronocare-ocr | 新建 |
+## 关键文件
 
-## 5. 接手第一步
-
-```bash
-cd ~/dev/chronocare && git pull origin main
-uv run pytest  # 验证 41 tests
-# 测试 OCR: 按 chronocare-ocr skill 流程操作
-```
+| 文件 | 说明 |
+|---|---|
+| `src/chronocare/services/medical_record.py` | 含规范化函数 normalize_* |
+| `src/chronocare/services/ocr_parser.py` | 降级处理，无 key 不崩溃 |
+| `tests/test_normalize.py` | 14 个规范化测试 |
+| `260518-handoff.md` | 本文件 |
