@@ -180,7 +180,11 @@ def _build_messages(record_type: str, raw_text: str) -> list[dict[str, str]]:
 def _call_openrouter(messages: list[dict[str, str]], model: str) -> str:
     api_key = settings.llm_api_key or os.environ.get("OPENROUTER_API_KEY", "")
     if not api_key:
-        raise ValueError("OPENROUTER_API_KEY is not set in environment or config")
+        # Graceful degradation: return error JSON instead of crashing
+        # OCR should be done via hermes chronocare-ocr skill (vision_analyze)
+        return json.dumps({
+            "error": "OPENROUTER_API_KEY 未配置，请使用 hermes chronocare-ocr skill 处理",
+        })
 
     headers = {
         "Authorization": f"Bearer {api_key}",

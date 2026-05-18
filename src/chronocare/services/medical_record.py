@@ -19,6 +19,149 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ---------------------------------------------------------------------------
+# Output format normalization
+# ---------------------------------------------------------------------------
+
+# Status mapping from vision_analyze variants to template-expected values
+_STATUS_MAP = {
+    "abnormal": "high",
+    "high": "high",
+    "elevated": "high",
+    "↑": "high",
+    "偏高": "high",
+    "明显偏高": "high",
+    "abnormal_low": "low",
+    "low": "low",
+    "decreased": "low",
+    "↓": "low",
+    "偏低": "low",
+    "明显偏低": "low",
+    "borderline": "slightly_high",
+    "mildly_high": "slightly_high",
+    "slightly_high": "slightly_high",
+    "略高": "slightly_high",
+    "轻微偏高": "slightly_high",
+    "borderline_low": "slightly_low",
+    "mildly_low": "slightly_low",
+    "slightly_low": "slightly_low",
+    "略低": "slightly_low",
+    "轻微偏低": "slightly_low",
+    "normal": "normal",
+    "within_range": "normal",
+    "正常": "normal",
+}
+
+
+def _normalize_status(raw: Any) -> str:
+    """Normalize status string to template-expected enum value."""
+    if not raw or not isinstance(raw, str):
+        return "normal"
+    return _STATUS_MAP.get(raw.strip().lower(), "normal")
+
+
+def _normalize_bool_status(is_abnormal: Any) -> str:
+    """Convert boolean is_abnormal to status string."""
+    if isinstance(is_abnormal, bool):
+        return "high" if is_abnormal else "normal"
+    return "normal"
+
+
+def normalize_lab_results(data: dict[str, Any]) -> dict[str, Any]:
+    """Normalize lab_results to template-expected format.
+
+    Template expects: {"tests": [{"name", "value", "unit", "reference", "status"}], "summary"}
+    vision_analyze may return: {"lab_items": [{"item_name", "result", "reference_range", "is_abnormal"}]}
+    """
+    if data is None:
+        return data
+    if isinstance(data, dict) and "error" in data:
+        return data
+
+    # Handle top-level array → wrap in {"tests": [...]}
+    if isinstance(data, list):
+        data = {"tests": data}
+
+    if not isinstance(data, dict):
+        return data
+
+    if "tests" in data:
+        # Already correct format, just normalize status values
+        for test in data["tests"]:
+            if isinstance(test, dict):
+                test["status"] = _normalize_status(test.get("status"))
+        return data
+
+    # Try common variant keys
+    items = data.get("lab_items") or data.get("items") or data.get("lab_values")
+    if not items and isinstance(data, list):
+        items = data  # Top-level array
+
+    if not items or not isinstance(items, list):
+        return data
+
+    tests = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        test = {
+            "name": item.get("name") or item.get("item_name") or item.get("项目") or "",
+            "value": str(item.get("value") or item.get("result") or item.get("结果") or ""),
+            "unit": item.get("unit") or item.get("单位") or "",
+            "reference": item.get("reference") or item.get("reference_range") or item.get("参考范围") or "",
+        }
+        # Status: try explicit status field, then boolean is_abnormal
+        if "status" in item:
+            test["status"] = _normalize_status(item["status"])
+        elif "is_abnormal" in item:
+            test["status"] = _normalize_bool_status(item["is_abnormal"])
+        else:
+            test["status"] = "normal"
+        tests.append(test)
+
+    result: dict[str, Any] = {"tests": tests}
+    if "summary" in data:
+        result["summary"] = data["summary"]
+    return result
+
+
+def normalize_doctor_orders(data: dict[str, Any]) -> dict[str, Any]:
+    """Normalize doctor_orders to template-expected format."""
+    if data is None:
+        return data
+    if not isinstance(data, dict):
+        return data
+    if "error" in data:
+        return data
+
+    # Ensure all required keys exist
+    normalized = {
+        "medications": data.get("medications") or [],
+        "lifestyle": data.get("lifestyle") or [],
+        "followup": data.get("followup") or "未提及",
+        "special_instructions": data.get("special_instructions") or "未提及",
+    }
+    return normalized
+
+
+def normalize_structured_data(data: dict[str, Any]) -> dict[str, Any]:
+    """Normalize structured_data to template-expected format."""
+    if data is None:
+        return data
+    if not isinstance(data, dict):
+        return data
+    if "error" in data:
+        return data
+
+    normalized = {
+        "diagnosis": data.get("diagnosis") or [],
+        "symptoms": data.get("symptoms") or [],
+        "treatment": data.get("treatment") or "未提及",
+        "followup": data.get("followup") or "未提及",
+    }
+    return normalized
+
+
+# ---------------------------------------------------------------------------
 # CRUD
 # ---------------------------------------------------------------------------
 
@@ -54,11 +197,20 @@ async def list_medical_records(
 async def update_medical_record(
     db: AsyncSession, record_id: int, data: MedicalRecordUpdate
 ) -> MedicalRecord | None:
-    """Update a medical record."""
+    """Update a medical record with automatic format normalization."""
     record = await get_medical_record(db, record_id)
     if record is None:
         return None
     update_data = data.model_dump(exclude_unset=True)
+
+    # Normalize structured fields before persisting
+    if "lab_results" in update_data and update_data["lab_results"]:
+        update_data["lab_results"] = normalize_lab_results(update_data["lab_results"])
+    if "doctor_orders" in update_data and update_data["doctor_orders"]:
+        update_data["doctor_orders"] = normalize_doctor_orders(update_data["doctor_orders"])
+    if "structured_data" in update_data and update_data["structured_data"]:
+        update_data["structured_data"] = normalize_structured_data(update_data["structured_data"])
+
     for key, value in update_data.items():
         setattr(record, key, value)
     await db.commit()
@@ -137,7 +289,7 @@ async def _ocr_and_parse(
         # LLM failed — keep ocr_text, mark structured as error marker
         record.structured_data = {"error": structured["error"]}
     else:
-        record.structured_data = structured
+        record.structured_data = normalize_structured_data(structured)
 
     await db.commit()
     await db.refresh(record)
@@ -200,7 +352,7 @@ async def process_lab_report(db: AsyncSession, record_id: int) -> dict[str, Any]
     if "error" in structured:
         record.lab_results = {"error": structured["error"]}
     else:
-        record.lab_results = structured
+        record.lab_results = normalize_lab_results(structured)
 
     await db.commit()
     await db.refresh(record)
@@ -240,7 +392,7 @@ async def process_doctor_order(db: AsyncSession, record_id: int) -> dict[str, An
     if "error" in structured:
         record.doctor_orders = {"error": structured["error"]}
     else:
-        record.doctor_orders = structured
+        record.doctor_orders = normalize_doctor_orders(structured)
 
     await db.commit()
     await db.refresh(record)
