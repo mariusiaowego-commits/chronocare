@@ -52,3 +52,6 @@ Thumbs.db
 # Hermes
 .hermes/
 .worktrees/
+
+# User uploads (medical images)
+uploads/

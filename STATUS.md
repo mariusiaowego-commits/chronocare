@@ -1,8 +1,8 @@
 # ChronoCare STATUS
 
-> 最后更新: 2026-05-14
+> 最后更新: 2026-05-18
 
-## 当前阶段: v0.5.0 血糖趋势分析 + Hermes Skill
+## 当前阶段: v0.5.0 血糖趋势分析 + Hermes Skill + OCR 方案 A
 
 ## 版本历史
 | 版本 | 日期 | 说明 |
@@ -65,6 +65,20 @@
 - src/chronocare/templates/blood_sugar/trend.html — 趋势分析可视化模板
 - src/chronocare/templates/base.html — 新增趋势分析导航链接
 
+### 生产验收 (2026-05-18)
+- T0-T5 全部通过 ✅
+- 真实化验单端到端: Swift OCR → vision_analyze → 手动格式化 → API 入库 → 页面展示
+- 患者: 钱精华（上海市老年医学中心，内分泌科，病历号 10230576）
+- 发现 P1 Bug: vision_analyze 输出格式与模板不匹配（需适配层）
+- 发现 P1: OPENROUTER_API_KEY 缺失时 LLM 解析崩溃（需降级处理）
+
+### OCR 方案 A 实施 (2026-05-18)
+- **架构**: OCR 全部在 hermes agent 层面完成 (vision_analyze)，应用不依赖 OPENROUTER_API_KEY
+- **chronocare-ocr skill**: 完整 harness — prompt 模板 + 字段映射 + API 调用 + 验收清单
+- **输出规范化层**: `normalize_lab_results/doctor_orders/structured_data` 自动转换格式
+- **降级处理**: 无 API key 时返回 error JSON 而非崩溃
+- **测试**: 41/41 通过 (原27 + 新14规范化测试)
+
 ### Vision OCR 引擎 (2026-05-14)
 - src/chronocare/services/vision_ocr.py — OpenRouter Vision API OCR 引擎 (跨平台)
 
@@ -86,7 +100,7 @@
 ## Git
 - 分支: main
 - pyproject.toml version: 0.5.0
-- 测试: 27/27 通过
+- 测试: 41/41 通过
 
 ## 开发命令
 ```bash
