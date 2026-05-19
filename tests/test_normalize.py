@@ -104,7 +104,13 @@ class TestNormalizeLabResults:
 class TestNormalizeDoctorOrders:
     def test_correct_format_passthrough(self):
         data = {
-            "medications": [{"name": "阿莫西林", "dosage": "500mg", "frequency": "每日3次", "duration": "7天", "notes": "饭后"}],
+            "medications": [{
+                "name": "阿莫西林",
+                "dosage": "500mg",
+                "frequency": "每日3次",
+                "duration": "7天",
+                "notes": "饭后"
+            }],
             "lifestyle": ["多喝水"],
             "followup": "一周后复诊",
             "special_instructions": "未提及"

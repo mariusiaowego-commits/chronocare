@@ -150,22 +150,24 @@
         {% else %}
             {% if record.doctor_orders.medications %}
             <h3>用药</h3>
-            <table class="med-table">
-                <thead>
-                    <tr><th>药品</th><th>剂量</th><th>频率</th><th>疗程</th><th>备注</th></tr>
-                </thead>
-                <tbody>
-                    {% for med in record.doctor_orders.medications %}
-                    <tr>
-                        <td class="med-name">{{ med.name }}</td>
-                        <td>{{ med.dosage }}</td>
-                        <td>{{ med.frequency }}</td>
-                        <td>{{ med.duration }}</td>
-                        <td class="med-notes">{{ med.notes or '' }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="overflow-x-auto">
+                <table class="med-table">
+                    <thead>
+                        <tr><th>药品</th><th>剂量</th><th>频率</th><th>疗程</th><th>备注</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for med in record.doctor_orders.medications %}
+                        <tr>
+                            <td class="med-name">{{ med.name }}</td>
+                            <td>{{ med.dosage }}</td>
+                            <td>{{ med.frequency }}</td>
+                            <td>{{ med.duration }}</td>
+                            <td class="med-notes">{{ med.notes or '' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
             {% endif %}
             {% if record.doctor_orders.lifestyle %}
             <h3>生活建议</h3>
@@ -198,42 +200,44 @@
             <p>⚠️ 解析失败: {{ record.lab_results.error }}</p>
         </div>
         {% elif record.lab_results.tests %}
-        <table class="lab-table">
-            <thead>
-                <tr>
-                    <th>项目</th>
-                    <th>结果</th>
-                    <th>单位</th>
-                    <th>参考范围</th>
-                    <th>状态</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for test in record.lab_results.tests %}
-                <tr class="status-{{ test.status }}">
-                    <td class="test-name">{{ test.name }}</td>
-                    <td class="test-value">{{ test.value }}</td>
-                    <td class="test-unit">{{ test.unit }}</td>
-                    <td class="test-ref">{{ test.reference }}</td>
-                    <td>
-                        {% if test.status == 'normal' %}
-                        <span class="status-badge status-normal">正常</span>
-                        {% elif test.status == 'slightly_high' %}
-                        <span class="status-badge status-slightly-high">轻微偏高</span>
-                        {% elif test.status == 'high' %}
-                        <span class="status-badge status-high">偏高</span>
-                        {% elif test.status == 'slightly_low' %}
-                        <span class="status-badge status-slightly-low">轻微偏低</span>
-                        {% elif test.status == 'low' %}
-                        <span class="status-badge status-low">偏低</span>
-                        {% else %}
-                        <span class="status-badge">{{ test.status or '未知' }}</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="overflow-x-auto">
+            <table class="lab-table">
+                <thead>
+                    <tr>
+                        <th>项目</th>
+                        <th>结果</th>
+                        <th>单位</th>
+                        <th>参考范围</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for test in record.lab_results.tests %}
+                    <tr class="status-{{ test.status }}">
+                        <td class="test-name">{{ test.name }}</td>
+                        <td class="test-value">{{ test.value }}</td>
+                        <td class="test-unit">{{ test.unit }}</td>
+                        <td class="test-ref">{{ test.reference }}</td>
+                        <td>
+                            {% if test.status == 'normal' %}
+                            <span class="status-badge status-normal">正常</span>
+                            {% elif test.status == 'slightly_high' %}
+                            <span class="status-badge status-slightly-high">轻微偏高</span>
+                            {% elif test.status == 'high' %}
+                            <span class="status-badge status-high">偏高</span>
+                            {% elif test.status == 'slightly_low' %}
+                            <span class="status-badge status-slightly-low">轻微偏低</span>
+                            {% elif test.status == 'low' %}
+                            <span class="status-badge status-low">偏低</span>
+                            {% else %}
+                            <span class="status-badge">{{ test.status or '未知' }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% endif %}
         {% if record.lab_results.summary and record.lab_results.summary != '未提及' %}
         <div class="summary-box">
