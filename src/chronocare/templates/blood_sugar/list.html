@@ -54,16 +54,33 @@ function initBsTrendChart(labels, values) {
     <!-- Person filter pills -->
     <div class="mb-5 flex gap-2 flex-wrap items-center">
         <span class="text-sm text-slate-500 mr-1">👤</span>
-        <a href="/blood-sugar"
-           class="px-3 py-1.5 rounded-full text-sm font-medium transition {{ 'bg-sky-600 text-white' if not selected_person_id else 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600' }}">
-            全部
-        </a>
-        {% for p in persons %}
-        <a href="/blood-sugar?person_id={{ p.id }}"
-           class="px-3 py-1.5 rounded-full text-sm font-medium transition {{ 'bg-sky-600 text-white' if selected_person_id == p.id else 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600' }}">
-            {{ p.name }}
-        </a>
-        {% endfor %}
+        <!-- Desktop: Buttons -->
+        <div class="hidden lg:flex gap-2 flex-wrap items-center">
+            <a href="/blood-sugar"
+               class="px-3 py-1.5 rounded-full text-sm font-medium transition {{ 'bg-sky-600 text-white' if not selected_person_id else 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600' }}">
+                全部
+            </a>
+            {% for p in persons %}
+            <a href="/blood-sugar?person_id={{ p.id }}"
+               class="px-3 py-1.5 rounded-full text-sm font-medium transition {{ 'bg-sky-600 text-white' if selected_person_id == p.id else 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600' }}">
+                {{ p.name }}
+            </a>
+            {% endfor %}
+        </div>
+        <!-- Mobile: Dropdown -->
+        <div class="lg:hidden">
+            <select onchange="if (this.value) window.location.href = this.value"
+                    class="px-3 py-1.5 rounded-full text-sm font-medium border border-slate-300 dark:border-slate-600
+                           bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300
+                           focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 cursor-pointer">
+                <option value="/blood-sugar" {{ 'selected' if not selected_person_id }}>全部</option>
+                {% for p in persons %}
+                <option value="/blood-sugar?person_id={{ p.id }}" {{ 'selected' if selected_person_id == p.id }}>
+                    {{ p.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
     </div>
 
     {% if records %}
@@ -80,7 +97,7 @@ function initBsTrendChart(labels, values) {
     {% endif %}
 
     <!-- Records table -->
-    <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+    <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-x-auto shadow-sm">
         <table class="w-full text-sm">
             <thead class="bg-slate-50 dark:bg-slate-700/50">
                 <tr>
