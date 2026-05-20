@@ -1,8 +1,8 @@
 # ChronoCare STATUS
 
-> 最后更新: 2026-05-18
+> 最后更新: 2026-05-20
 
-## 当前阶段: v0.5.0 血糖趋势分析 + Hermes Skill + OCR 方案 A
+## 当前阶段: v0.5.0 + 前端重设计 + 表单校验 + UX 优化
 
 ## 版本历史
 | 版本 | 日期 | 说明 |
@@ -18,6 +18,8 @@
 - Person + Condition 模型
 - 父母双角色支持
 - CRUD: API + 页面 (list/detail/form)
+- **blur 实时校验** (2026-05-20): 姓名/出生日期/身高/体重
+- **女性角色深粉红卡片** (2026-05-20): Dashboard + 列表 + 详情
 
 ### 2. 血糖监控 ✅
 - BloodSugarRecord 模型
@@ -42,6 +44,7 @@
 - **Layer 1**: macOS Vision Framework (scripts/vision_ocr.swift)
 - **Layer 2**: LLM 结构化解析 (services/ocr_parser.py, OpenRouter/Gemini)
 - 化验报告彩色状态标记 (绿=正常, 红=偏高, 橙=偏低)
+- **图片预览 + Lightbox** (2026-05-20): 点击放大查看原件
 - 27 个测试全部通过
 
 ### 5. 仪表盘 ✅
@@ -55,50 +58,33 @@
 - 创建备份 / 恢复备份 / 备份状态
 - API: POST /api/backup, POST /api/backup/restore, GET /api/backup/status
 
-## v0.5.0 改动摘要
+### 7. Lucide Icon 系统 ✅ (2026-05-20 新增)
+- 28 个 Lucide Outline SVG icon
+- Jinja2 macro (`macros/icon.html`) 统一调用
+- 0 emoji 残留，全部替换为 SVG
+- 深色模式 `currentColor` 自动适配
 
-### 血糖趋势分析 (2026-05-14)
-- src/chronocare/schemas/blood_sugar.py — 新增 BloodSugarTrend schema
-- src/chronocare/services/blood_sugar.py — 新增 get_blood_sugar_trend(), get_blood_sugar_chart_data()
-- src/chronocare/routers/api/blood_sugar.py — 新增 /api/blood-sugar/trend/{person_id}, /api/blood-sugar/chart-data/{person_id}
-- src/chronocare/routers/pages/blood_sugar.py — 新增 /blood-sugar/trend 页面路由
-- src/chronocare/templates/blood_sugar/trend.html — 趋势分析可视化模板
-- src/chronocare/templates/base.html — 新增趋势分析导航链接
+## 2026-05-20 改动摘要
 
-### 生产验收 (2026-05-18)
-- T0-T5 全部通过 ✅
-- 真实化验单端到端: Swift OCR → vision_analyze → 手动格式化 → API 入库 → 页面展示
-- 患者: 钱精华（上海市老年医学中心，内分泌科，病历号 10230576）
-- 发现 P1 Bug: vision_analyze 输出格式与模板不匹配（需适配层）
-- 发现 P1: OPENROUTER_API_KEY 缺失时 LLM 解析崩溃（需降级处理）
+### Lucide Icon 重设计
+- 删除全部 46 处 emoji，替换为 28 个 Lucide Outline SVG
+- 新增 `templates/icons/` (28 SVG) + `templates/macros/icon.html`
+- 后端 `alert.icon` 字段从 emoji 改为 Lucide 名称字符串
+- 设计文档: `docs/icon-redesign-prd.md`
 
-### OCR 方案 A 实施 (2026-05-18)
-- **架构**: OCR 全部在 hermes agent 层面完成 (vision_analyze)，应用不依赖 OPENROUTER_API_KEY
-- **chronocare-ocr skill**: 完整 harness — prompt 模板 + 字段映射 + API 调用 + 验收清单
-- **输出规范化层**: `normalize_lab_results/doctor_orders/structured_data` 自动转换格式
-- **降级处理**: 无 API key 时返回 error JSON 而非崩溃
-- **测试**: 41/41 通过 (原27 + 新14规范化测试)
+### 表单校验
+- 前端 blur 实时校验 (姓名/出生日期/身高/体重)
+- 后端 ValidationError 捕获 + 错误回显 + 数据回填
+- 编辑档案同样受保护
 
-### Vision OCR 引擎 (2026-05-14)
-- src/chronocare/services/vision_ocr.py — OpenRouter Vision API OCR 引擎 (跨平台)
-
-### OCR Pipeline (T1-T4)
-- scripts/vision_ocr.swift — macOS Vision OCR (中英文)
-- src/chronocare/services/ocr_engine.py — Python subprocess 封装
-- src/chronocare/services/ocr_parser.py — LLM 结构化解析 (4 种 prompt)
-- src/chronocare/services/medical_record.py — mock 替换为真实 pipeline
-- src/chronocare/routers/api/medical_record.py — 新增 /process 端点
-- tests/services/test_ocr_parser.py — 9 个单元测试
-- tests/test_services/test_medical_record.py — 16 个集成测试
-- detail.html — 化验报告彩色状态 + 医嘱表格 + OCR 原始文本
-
-## 路由统计
-- 页面路由: 5 个 (/dashboard, /persons, /blood-sugar, /visits, /medical-records)
-- API 路由: ~30 个 (含 CRUD + 备份 + OCR)
-- 系统路由: /health, /docs, /openapi, /redoc
+### UX 修复
+- 移动端抽屉不响应: 移除冲突的 `transform` class + resize 监听
+- 图片预览: `/uploads` 静态挂载 + `<img>` + Lightbox
+- 女性角色深粉红: Dashboard 渐变 + 列表边框 + 详情图标
 
 ## Git
 - 分支: main
+- 最新 commit: 820a0e9
 - pyproject.toml version: 0.5.0
 - 测试: 41/41 通过
 
