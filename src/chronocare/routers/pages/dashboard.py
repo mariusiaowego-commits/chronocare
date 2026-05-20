@@ -62,7 +62,7 @@ async def dashboard(
             if latest.value > 13.9:
                 alerts.append({
                     "severity": "critical",
-                    "icon": "🚨",
+                    "icon": "circle-alert",
                     "title": "严重高血糖",
                     "message": f"血糖 {latest.value} mmol/L，需立即处理",
                 })
@@ -70,14 +70,14 @@ async def dashboard(
             elif latest.value > 11.1:
                 alerts.append({
                     "severity": "high",
-                    "icon": "⚠️",
+                    "icon": "triangle-alert",
                     "title": "高血糖预警",
                     "message": f"血糖 {latest.value} mmol/L，注意饮食",
                 })
             elif latest.value < 3.9:
                 alerts.append({
                     "severity": "high",
-                    "icon": "⚠️",
+                    "icon": "triangle-alert",
                     "title": "低血糖预警",
                     "message": f"血糖 {latest.value} mmol/L，及时补充糖分",
                 })
@@ -87,7 +87,7 @@ async def dashboard(
         if upcoming:
             alerts.append({
                 "severity": "medium",
-                "icon": "📅",
+                "icon": "calendar",
                 "title": "复诊提醒",
                 "message": f"{upcoming.hospital or '待定'} · {upcoming.next_followup_date}",
             })

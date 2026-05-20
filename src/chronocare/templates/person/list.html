@@ -4,7 +4,7 @@
 {% block content %}
 <div class="max-w-4xl mx-auto">
     <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold">👤 老人档案</h1>
+        <h1 class="text-2xl font-bold"><svg class="inline-block align-middle" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/users.svg' ignore missing %}</svg> 老人档案</h1>
         <a href="/persons/new" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
             + 添加老人
         </a>
@@ -14,14 +14,14 @@
     <div class="grid gap-4 sm:grid-cols-2">
         {% for person in persons %}
         <a href="/persons/{{ person.id }}"
-           class="card-animate card-interactive block bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 hover:shadow-md transition">
+           class="card-animate card-interactive block bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 {{ 'border-pink-300 dark:border-pink-600' if person.gender == 'F' else '' }} p-6 hover:shadow-md transition">
             <div class="flex items-center gap-3 mb-3">
-                <span class="text-2xl">{{ '👩' if person.gender == 'F' else '👨' if person.gender == 'M' else '👤' }}</span>
+                <svg class="inline-block align-middle {{ 'text-pink-600 dark:text-pink-400' if person.gender == 'F' else 'text-sky-600 dark:text-sky-400' }}" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/user.svg' ignore missing %}</svg>
                 <h2 class="text-lg font-semibold">{{ person.name }}</h2>
             </div>
             <div class="text-sm text-slate-600 dark:text-slate-400 space-y-1">
                 {% if person.birth_date %}
-                <p>📅 {{ person.birth_date }}</p>
+                <p><svg class="inline-block align-middle" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/calendar.svg' ignore missing %}</svg> {{ person.birth_date }}</p>
                 {% endif %}
                 {% if person.disease_tags %}
                 <div class="flex flex-wrap gap-1 mt-2">
@@ -39,7 +39,7 @@
     </div>
     {% else %}
     <div class="text-center py-12 text-slate-500">
-        <p class="text-4xl mb-4">👤</p>
+        <svg class="inline-block align-middle text-slate-300 mb-4" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/user.svg' ignore missing %}</svg>
         <p>还没有老人档案</p>
         <a href="/persons/new" class="text-blue-600 hover:underline mt-2 inline-block">添加第一位老人</a>
     </div>

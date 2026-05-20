@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container">
     <div class="header">
-        <h1>📋 就医记录详情</h1>
+        <h1><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/clipboard-list.svg' ignore missing %}</svg> 就医记录详情</h1>
         <div class="actions">
             <a href="/medical-records/{{ record.id }}/edit" class="btn">编辑</a>
             <form method="post" action="/medical-records/{{ record.id }}/delete" style="display:inline">
@@ -54,10 +54,14 @@
 
     <!-- 图片上传 -->
     <div class="section">
-        <h2>📷 图片上传</h2>
+        <h2><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/camera.svg' ignore missing %}</svg> 图片上传</h2>
         {% if record.image_path %}
         <div class="image-preview">
-            <p>已上传图片: {{ record.image_path }}</p>
+            <img src="/{{ record.image_path }}" alt="医疗文档图片"
+                 class="max-w-full max-h-[600px] rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm cursor-pointer hover:shadow-md transition"
+                 onclick="openLightbox(this.src)"
+                 loading="lazy">
+            <p class="text-xs text-slate-400 mt-2">{{ record.image_path.split('/')[-1] }}</p>
         </div>
         {% else %}
         <form method="post" action="/medical-records/{{ record.id }}/upload" enctype="multipart/form-data">
@@ -70,7 +74,7 @@
     <!-- OCR处理 -->
     {% if record.image_path %}
     <div class="section">
-        <h2>🔍 OCR识别</h2>
+        <h2><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/camera.svg' ignore missing %}</svg> OCR识别</h2>
         <div class="ocr-actions">
             <form method="post" action="/medical-records/{{ record.id }}/ocr" style="display:inline">
                 <button type="submit" class="btn">通用OCR识别</button>
@@ -88,7 +92,7 @@
     <!-- OCR原始文本 (所有类型) -->
     {% if record.ocr_text %}
     <div class="section">
-        <h2>📝 OCR识别文本</h2>
+        <h2><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/file-pen.svg' ignore missing %}</svg> OCR识别文本</h2>
         <pre class="ocr-text">{{ record.ocr_text }}</pre>
     </div>
     {% endif %}
@@ -97,12 +101,12 @@
     {% if record.structured_data and record.record_type == 'medical_record' %}
     {% if record.structured_data.error %}
     <div class="section error-box">
-        <h2>⚠️ 结构化解析失败</h2>
+        <h2><svg class="inline-block align-middle text-amber-500" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/triangle-alert.svg' ignore missing %}</svg> 结构化解析失败</h2>
         <p>{{ record.structured_data.error }}</p>
     </div>
     {% else %}
     <div class="section">
-        <h2>📊 结构化数据</h2>
+        <h2><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/layout-dashboard.svg' ignore missing %}</svg> 结构化数据</h2>
         {% if record.structured_data.diagnosis %}
         <div class="data-block">
             <h3>诊断</h3>
@@ -142,10 +146,10 @@
     <!-- 医嘱: doctor_order / prescription -->
     {% if record.doctor_orders %}
     <div class="section">
-        <h2>💊 医嘱</h2>
+        <h2><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/pill.svg' ignore missing %}</svg> 医嘱</h2>
         {% if record.doctor_orders.error %}
         <div class="error-box">
-            <p>⚠️ 解析失败: {{ record.doctor_orders.error }}</p>
+            <p><svg class="inline-block align-middle text-amber-500" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/triangle-alert.svg' ignore missing %}</svg> 解析失败: {{ record.doctor_orders.error }}</p>
         </div>
         {% else %}
             {% if record.doctor_orders.medications %}
@@ -194,10 +198,10 @@
     <!-- 化验结果: lab_report -->
     {% if record.lab_results %}
     <div class="section">
-        <h2>🧪 化验结果</h2>
+        <h2><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/flask-conical.svg' ignore missing %}</svg> 化验结果</h2>
         {% if record.lab_results.error %}
         <div class="error-box">
-            <p>⚠️ 解析失败: {{ record.lab_results.error }}</p>
+            <p><svg class="inline-block align-middle text-amber-500" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/triangle-alert.svg' ignore missing %}</svg> 解析失败: {{ record.lab_results.error }}</p>
         </div>
         {% elif record.lab_results.tests %}
         <div class="overflow-x-auto">
@@ -317,5 +321,29 @@ tr.status-slightly_low, tr.status-low { background: #fffbf0; }
 
 /* OCR actions */
 .ocr-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Image preview */
+.image-preview { text-align: center; }
+
+/* Lightbox */
+#lightbox { position: fixed; inset: 0; z-index: 999; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; cursor: zoom-out; }
+#lightbox.active { display: flex; }
+#lightbox img { max-width: 95vw; max-height: 95vh; border-radius: 8px; box-shadow: 0 8px 40px rgba(0,0,0,0.5); }
 </style>
+
+<!-- Lightbox overlay -->
+<div id="lightbox" onclick="this.classList.remove('active')">
+    <img id="lightbox-img" src="" alt="放大查看">
+</div>
+
+<script>
+function openLightbox(src) {
+    const lb = document.getElementById('lightbox');
+    document.getElementById('lightbox-img').src = src;
+    lb.classList.add('active');
+}
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.getElementById('lightbox').classList.remove('active');
+});
+</script>
 {% endblock %}

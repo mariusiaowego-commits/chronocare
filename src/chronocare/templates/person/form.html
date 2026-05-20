@@ -6,103 +6,122 @@
     <div class="mb-6 flex items-center gap-3">
         <a href="/persons" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition">←</a>
         <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">
-            {{ '✏️ 编辑档案' if person else '➕ 新增老人' }}
+            {% if person %}<svg class="inline-block align-middle" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/pencil.svg' ignore missing %}</svg> 编辑档案{% else %}<svg class="inline-block align-middle" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/file-plus.svg' ignore missing %}</svg> 新增老人{% endif %}
         </h1>
     </div>
 
-    <form method="post"
+    {% if error is defined and error %}
+    <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-300 text-sm">
+        <svg class="inline-block align-middle mr-1.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/circle-alert.svg' ignore missing %}</svg>
+        {{ error }}
+    </div>
+    {% endif %}
+
+    {% set fd = form_data if form_data is defined else {} %}
+
+    <form id="person-form" method="post" novalidate
           action="{% if person %}/persons/{{ person.id }}/edit{% else %}/persons/new{% endif %}"
           class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8 space-y-5 shadow-sm">
 
         <!-- Name -->
-        <div>
+        <div class="field-group">
             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">姓名 *</label>
-            <input type="text" name="name" required value="{{ person.name if person else '' }}"
-                   placeholder="如：张三"
-                   class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition"
+            <input type="text" name="name" required value="{{ person.name if person else fd.get('name', '') }}"
+                   placeholder="如：张三" data-label="姓名"
+                   class="form-input w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition"
                    style="font-size:1.1rem">
+            <p class="field-error hidden mt-1.5 text-xs text-red-500"></p>
         </div>
 
         <!-- Gender + Blood Type row -->
         <div class="grid grid-cols-2 gap-4">
-            <div>
+            <div class="field-group">
                 <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">性别</label>
                 <select name="gender"
-                        class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
+                        class="form-input w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
                     <option value="">未选择</option>
-                    <option value="F" {{ 'selected' if person and person.gender == 'F' }}>👩 女</option>
-                    <option value="M" {{ 'selected' if person and person.gender == 'M' }}>👨 男</option>
+                    <option value="F" {{ 'selected' if (person and person.gender == 'F') or fd.get('gender') == 'F' }}>女</option>
+                    <option value="M" {{ 'selected' if (person and person.gender == 'M') or fd.get('gender') == 'M' }}>男</option>
                 </select>
+                <p class="field-error hidden mt-1.5 text-xs text-red-500"></p>
             </div>
-            <div>
+            <div class="field-group">
                 <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">血型</label>
                 <select name="blood_type"
-                        class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
+                        class="form-input w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
                     <option value="">未选择</option>
                     {% for bt in ['A','B','AB','O'] %}
-                    <option value="{{ bt }}" {{ 'selected' if person and person.blood_type == bt }}>{{ bt }}型</option>
+                    <option value="{{ bt }}" {{ 'selected' if (person and person.blood_type == bt) or fd.get('blood_type') == bt }}>{{ bt }}型</option>
                     {% endfor %}
                 </select>
+                <p class="field-error hidden mt-1.5 text-xs text-red-500"></p>
             </div>
         </div>
 
         <!-- Birth date -->
-        <div>
+        <div class="field-group">
             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">出生日期</label>
             <input type="date" name="birth_date"
-                   value="{{ person.birth_date if person else '' }}"
-                   class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
+                   value="{{ person.birth_date if person else fd.get('birth_date', '') }}"
+                   data-label="出生日期"
+                   class="form-input w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
+            <p class="field-error hidden mt-1.5 text-xs text-red-500"></p>
         </div>
 
         <!-- Height + Weight row -->
         <div class="grid grid-cols-2 gap-4">
-            <div>
+            <div class="field-group">
                 <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">身高 (cm)</label>
                 <input type="number" name="height_cm" min="100" max="220"
-                       value="{{ person.height_cm if person else '' }}"
-                       placeholder="170"
-                       class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
+                       value="{{ person.height_cm if person else fd.get('height_cm', '') }}"
+                       placeholder="170" data-label="身高" data-min="100" data-max="220"
+                       class="form-input w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
+                <p class="field-error hidden mt-1.5 text-xs text-red-500"></p>
             </div>
-            <div>
+            <div class="field-group">
                 <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">体重 (kg)</label>
                 <input type="number" name="weight_kg" min="30" max="200" step="0.1"
-                       value="{{ person.weight_kg if person else '' }}"
-                       placeholder="65"
-                       class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
+                       value="{{ person.weight_kg if person else fd.get('weight_kg', '') }}"
+                       placeholder="65" data-label="体重" data-min="30" data-max="200"
+                       class="form-input w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
+                <p class="field-error hidden mt-1.5 text-xs text-red-500"></p>
             </div>
         </div>
 
         <!-- Preferred hospital + Primary doctor row -->
         <div class="grid grid-cols-2 gap-4">
-            <div>
+            <div class="field-group">
                 <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">常用医院</label>
                 <input type="text" name="preferred_hospital"
-                       value="{{ person.preferred_hospital if person else '' }}"
+                       value="{{ person.preferred_hospital if person else fd.get('preferred_hospital', '') }}"
                        placeholder="如：北京协和医院"
-                       class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
+                       class="form-input w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
+                <p class="field-error hidden mt-1.5 text-xs text-red-500"></p>
             </div>
-            <div>
+            <div class="field-group">
                 <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">主治医生</label>
                 <input type="text" name="primary_doctor"
-                       value="{{ person.primary_doctor if person else '' }}"
+                       value="{{ person.primary_doctor if person else fd.get('primary_doctor', '') }}"
                        placeholder="如：张医生"
-                       class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
+                       class="form-input w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition">
+                <p class="field-error hidden mt-1.5 text-xs text-red-500"></p>
             </div>
         </div>
 
         <!-- Notes -->
-        <div>
+        <div class="field-group">
             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">备注</label>
             <textarea name="notes" rows="3"
                       placeholder="过敏史、慢性病等..."
-                      class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition resize-none">{{ person.notes if person else '' }}</textarea>
+                      class="form-input w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition resize-none">{{ person.notes if person else fd.get('notes', '') }}</textarea>
+            <p class="field-error hidden mt-1.5 text-xs text-red-500"></p>
         </div>
 
         <!-- Actions -->
         <div class="flex gap-3 pt-2">
-            <button type="submit"
+            <button type="submit" id="submit-btn"
                     class="px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-medium rounded-xl transition shadow-sm">
-                ✓ 保存
+                <svg class="inline-block align-middle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> 保存
             </button>
             <a href="/persons{% if person %}/{{ person.id }}{% endif %}"
                class="px-6 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition">
@@ -111,4 +130,113 @@
         </div>
     </form>
 </div>
+
+<style>
+.field-error { transition: all 0.2s ease; }
+.field-group.has-error .form-input { border-color: #ef4444 !important; }
+.field-group.has-error .form-input:focus { --tw-ring-color: #ef4444 !important; }
+</style>
+
+<script>
+(function() {
+    const form = document.getElementById('person-form');
+    const submitBtn = document.getElementById('submit-btn');
+
+    // ── Validation rules ──
+    const rules = {
+        name: {
+            validate(v) {
+                if (!v.trim()) return '请输入姓名';
+                if (v.trim().length > 50) return '姓名不能超过50个字符';
+                return '';
+            }
+        },
+        birth_date: {
+            validate(v) {
+                if (!v) return '';  // optional
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return '日期格式不正确，应为 YYYY-MM-DD';
+                const d = new Date(v);
+                if (isNaN(d.getTime())) return '无效日期';
+                if (d > new Date()) return '出生日期不能是未来';
+                if (d.getFullYear() < 1900) return '年份不能早于1900';
+                return '';
+            }
+        },
+        height_cm: {
+            validate(v) {
+                if (!v) return '';  // optional
+                const n = parseFloat(v);
+                if (isNaN(n)) return '请输入有效数字';
+                if (n < 100 || n > 220) return '身高范围 100-220 cm';
+                return '';
+            }
+        },
+        weight_kg: {
+            validate(v) {
+                if (!v) return '';  // optional
+                const n = parseFloat(v);
+                if (isNaN(n)) return '请输入有效数字';
+                if (n < 30 || n > 200) return '体重范围 30-200 kg';
+                return '';
+            }
+        }
+    };
+
+    // ── Show/clear error on a single field ──
+    function showError(input, msg) {
+        const group = input.closest('.field-group');
+        const errEl = group?.querySelector('.field-error');
+        if (!group || !errEl) return;
+
+        if (msg) {
+            group.classList.add('has-error');
+            errEl.textContent = msg;
+            errEl.classList.remove('hidden');
+            input.setAttribute('aria-invalid', 'true');
+        } else {
+            group.classList.remove('has-error');
+            errEl.textContent = '';
+            errEl.classList.add('hidden');
+            input.removeAttribute('aria-invalid');
+        }
+    }
+
+    // ── Validate one field (used on blur + submit) ──
+    function validateField(input) {
+        const name = input.name;
+        if (!rules[name]) return true;  // no rules = always valid
+        const msg = rules[name].validate(input.value);
+        showError(input, msg);
+        return !msg;
+    }
+
+    // ── Attach blur listeners to all ruled fields ──
+    Object.keys(rules).forEach(name => {
+        const input = form.querySelector(`[name="${name}"]`);
+        if (!input) return;
+        input.addEventListener('blur', () => validateField(input));
+        // Also clear error on input (user is correcting)
+        input.addEventListener('input', () => {
+            const group = input.closest('.field-group');
+            if (group?.classList.contains('has-error')) validateField(input);
+        });
+    });
+
+    // ── Submit: validate all before submit ──
+    form.addEventListener('submit', (e) => {
+        let firstInvalid = null;
+        Object.keys(rules).forEach(name => {
+            const input = form.querySelector(`[name="${name}"]`);
+            if (input && !validateField(input) && !firstInvalid) {
+                firstInvalid = input;
+            }
+        });
+        if (firstInvalid) {
+            e.preventDefault();
+            firstInvalid.focus();
+            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+})();
+</script>
 {% endblock %}

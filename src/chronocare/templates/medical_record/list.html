@@ -5,7 +5,7 @@
 <div class="max-w-4xl mx-auto">
     <!-- Header -->
     <div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
-        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">📄 就医记录 OCR</h1>
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/file-text.svg' ignore missing %}</svg> 就医记录 OCR</h1>
         <a href="/medical-records/new{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}"
            class="px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-medium transition shadow-sm">
             + 新增记录
@@ -14,7 +14,7 @@
 
     <!-- Filters: person + record type -->
     <div class="mb-5 flex gap-3 flex-wrap items-center">
-        <span class="text-sm text-slate-500 mr-1">👤</span>
+        <span class="text-sm text-slate-500 mr-1"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/user.svg' ignore missing %}</svg></span>
         <!-- Desktop: Buttons -->
         <div class="hidden lg:flex gap-2 flex-wrap items-center">
             <a href="/medical-records"
@@ -45,7 +45,7 @@
 
         <span class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></span>
 
-        <span class="text-sm text-slate-500">📋</span>
+        <span class="text-sm text-slate-500"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/clipboard-list.svg' ignore missing %}</svg></span>
         {% for rt in ['全部','就医记录','化验报告','处方','医嘱'] %}
         {% set rt_val = '' if rt == '全部' else ('medical_record' if rt == '就医记录' else 'lab_report' if rt == '化验报告' else 'prescription' if rt == '处方' else 'doctor_order') %}
         <a href="/medical-records{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}{% if rt_val %}&record_type={{ rt_val }}{% endif %}"
@@ -67,10 +67,10 @@
                        else 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' if record.record_type == 'lab_report'
                        else 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' if record.record_type == 'prescription'
                        else 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' }}">
-                    {% if record.record_type == 'medical_record' %}📋 就医记录
-                    {% elif record.record_type == 'lab_report' %}🧪 化验报告
-                    {% elif record.record_type == 'prescription' %}💊 处方
-                    {% elif record.record_type == 'doctor_order' %}📝 医嘱{% endif %}
+                    {% if record.record_type == 'medical_record' %}<svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/clipboard-list.svg' ignore missing %}</svg> 就医记录
+                    {% elif record.record_type == 'lab_report' %}<svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/flask-conical.svg' ignore missing %}</svg> 化验报告
+                    {% elif record.record_type == 'prescription' %}<svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/pill.svg' ignore missing %}</svg> 处方
+                    {% elif record.record_type == 'doctor_order' %}<svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/file-pen.svg' ignore missing %}</svg> 医嘱{% endif %}
                 </span>
                 <span class="text-xs text-slate-400">{{ record.visit_date or '日期不详' }}</span>
             </div>
@@ -95,7 +95,7 @@
             {% if record.record_type in ['lab_report','prescription','doctor_order'] %}
             <div class="mt-3 flex items-center gap-1.5">
                 <span class="text-xs {{ 'text-teal-600' if record.processed_at else 'text-amber-500' }}">
-                    {{ '✓ 已识别' if record.processed_at else '⏳ 待识别' }}
+                    {% if record.processed_at %}<svg class="inline-block align-middle text-teal-500" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/check.svg' ignore missing %}</svg> 已识别{% else %}⏳ 待识别{% endif %}
                 </span>
             </div>
             {% endif %}
@@ -105,7 +105,7 @@
     {% else %}
     <!-- Empty state -->
     <div class="flex flex-col items-center justify-center py-20 text-slate-400">
-        <span class="text-5xl mb-4">📄</span>
+        <span class="text-5xl mb-4"><svg class="inline-block align-middle" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/file-text.svg' ignore missing %}</svg></span>
         <h2 class="text-lg font-medium text-slate-500 mb-2">还没有就医记录</h2>
         <p class="text-sm mb-6">上传病历、化验单、处方等，AI自动识别结构化数据</p>
         <a href="/medical-records/new{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}"
