@@ -75,7 +75,7 @@ function initDistributionChart(tir) {
 <div class="max-w-5xl mx-auto">
     <!-- Header -->
     <div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
-        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">📈 血糖趋势分析</h1>
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/trending-up.svg' ignore missing %}</svg> 血糖趋势分析</h1>
         <a href="/blood-sugar{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}"
            class="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-medium transition hover:bg-slate-300 dark:hover:bg-slate-600">
             ← 返回列表
@@ -84,7 +84,7 @@ function initDistributionChart(tir) {
 
     <!-- Person filter pills -->
     <div class="mb-5 flex gap-2 flex-wrap items-center">
-        <span class="text-sm text-slate-500 mr-1">👤</span>
+        <span class="text-sm text-slate-500 mr-1"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/user.svg' ignore missing %}</svg></span>
         <a href="/blood-sugar/trend?days={{ days }}"
            class="px-3 py-1.5 rounded-full text-sm font-medium transition {{ 'bg-sky-600 text-white' if not selected_person_id else 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600' }}">
             全部
@@ -100,7 +100,7 @@ function initDistributionChart(tir) {
     {% if trend %}
     <!-- Days filter -->
     <div class="mb-5 flex gap-2 flex-wrap items-center">
-        <span class="text-sm text-slate-500 mr-1">📅</span>
+        <span class="text-sm text-slate-500 mr-1"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/calendar.svg' ignore missing %}</svg></span>
         {% for d in [7, 14, 30, 60, 90] %}
         <a href="/blood-sugar/trend?{% if selected_person_id %}person_id={{ selected_person_id }}&{% endif %}days={{ d }}"
            class="px-3 py-1.5 rounded-full text-sm font-medium transition {{ 'bg-emerald-600 text-white' if days == d else 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600' }}">
@@ -187,7 +187,7 @@ function initDistributionChart(tir) {
         <!-- Trend Chart -->
         <div class="lg:col-span-2 card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="font-semibold text-slate-700 dark:text-slate-200">📈 血糖趋势</h3>
+                <h3 class="font-semibold text-slate-700 dark:text-slate-200"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/trending-up.svg' ignore missing %}</svg> 血糖趋势</h3>
                 <div class="flex gap-2 text-xs">
                     {% if trend.moving_avg_7d %}
                     <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
@@ -208,7 +208,7 @@ function initDistributionChart(tir) {
 
         <!-- Distribution Chart -->
         <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
-            <h3 class="font-semibold text-slate-700 dark:text-slate-200 mb-4">🎯 目标范围分布</h3>
+            <h3 class="font-semibold text-slate-700 dark:text-slate-200 mb-4"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/target.svg' ignore missing %}</svg> 目标范围分布</h3>
             <div style="height:200px">
                 <canvas id="distributionChart"></canvas>
             </div>
@@ -226,7 +226,7 @@ function initDistributionChart(tir) {
 
     <!-- Additional Stats -->
     <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
-        <h3 class="font-semibold text-slate-700 dark:text-slate-200 mb-4">📊 详细统计</h3>
+        <h3 class="font-semibold text-slate-700 dark:text-slate-200 mb-4"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/layout-dashboard.svg' ignore missing %}</svg> 详细统计</h3>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
                 <div class="text-xs text-slate-500">最小值</div>
@@ -260,7 +260,7 @@ function initDistributionChart(tir) {
     {% else %}
     <!-- Empty state -->
     <div class="flex flex-col items-center justify-center py-20 text-slate-400">
-        <span class="text-5xl mb-4">📈</span>
+        <span class="text-5xl mb-4"><svg class="inline-block align-middle" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/trending-up.svg' ignore missing %}</svg></span>
         <h2 class="text-lg font-medium text-slate-500 mb-2">请选择人员查看趋势分析</h2>
         <p class="text-sm mb-6">选择上方的人员筛选器开始分析</p>
     </div>

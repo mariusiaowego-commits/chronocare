@@ -16,7 +16,7 @@
     <div class="mb-6 flex items-center gap-3">
         <a href="/medical-records" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition">←</a>
         <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">
-            {{ '✏️ 编辑记录' if record else '📄 新增就医记录' }}
+            {% if record %}<svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/pencil.svg' ignore missing %}</svg> 编辑记录{% else %}<svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/file-text.svg' ignore missing %}</svg> 新增就医记录{% endif %}
         </h1>
     </div>
 
@@ -42,10 +42,10 @@
             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">记录类型 *</label>
             <select name="record_type" required
                     class="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-violet-500 outline-none transition">
-                <option value="medical_record" {{ 'selected' if record and record.record_type == 'medical_record' }}>📋 就医记录</option>
-                <option value="lab_report" {{ 'selected' if record and record.record_type == 'lab_report' }}>🧪 化验报告</option>
-                <option value="prescription" {{ 'selected' if record and record.record_type == 'prescription' }}>💊 处方</option>
-                <option value="doctor_order" {{ 'selected' if record and record.record_type == 'doctor_order' }}>📝 医嘱</option>
+                <option value="medical_record" {{ 'selected' if record and record.record_type == 'medical_record' }}><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/clipboard-list.svg' ignore missing %}</svg> 就医记录</option>
+                <option value="lab_report" {{ 'selected' if record and record.record_type == 'lab_report' }}><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/flask-conical.svg' ignore missing %}</svg> 化验报告</option>
+                <option value="prescription" {{ 'selected' if record and record.record_type == 'prescription' }}><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/pill.svg' ignore missing %}</svg> 处方</option>
+                <option value="doctor_order" {{ 'selected' if record and record.record_type == 'doctor_order' }}><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/file-pen.svg' ignore missing %}</svg> 医嘱</option>
             </select>
         </div>
 
@@ -92,7 +92,7 @@
         <div class="flex gap-3 pt-2">
             <button type="submit"
                     class="px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-xl transition shadow-sm">
-                ✓ 保存
+                <svg class="inline-block align-middle text-teal-500" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/check.svg' ignore missing %}</svg> 保存
             </button>
             <a href="/medical-records"
                class="px-6 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition">
@@ -105,7 +105,7 @@
     {% if not record %}
     <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-600 p-8 text-center"
          id="drop-zone">
-        <div class="text-4xl mb-3">📤</div>
+        <div class="text-4xl mb-3"><svg class="inline-block align-middle" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/upload.svg' ignore missing %}</svg></div>
         <p class="text-slate-500 text-sm mb-1">拖拽图片到这里上传</p>
         <p class="text-slate-400 text-xs mb-4">支持 JPG/PNG/PDF，OCR 自动识别</p>
         <input type="file" id="file-input" accept="image/*,.pdf" class="hidden">

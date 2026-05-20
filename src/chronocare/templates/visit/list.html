@@ -5,7 +5,7 @@
 <div class="max-w-4xl mx-auto">
     <!-- Header -->
     <div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
-        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">🏥 就诊记录</h1>
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/hospital.svg' ignore missing %}</svg> 就诊记录</h1>
         <a href="/visits/new{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}"
            class="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium transition shadow-sm">
             + 添加就诊
@@ -14,7 +14,7 @@
 
     <!-- Person filter -->
     <div class="mb-5 flex gap-2 flex-wrap items-center">
-        <span class="text-sm text-slate-500 mr-1">👤</span>
+        <span class="text-sm text-slate-500 mr-1"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/user.svg' ignore missing %}</svg></span>
         <!-- Desktop: Buttons -->
         <div class="hidden lg:flex gap-2 flex-wrap items-center">
             <a href="/visits"
@@ -55,7 +55,7 @@
             <div class="card-animate relative flex gap-4">
                 <!-- Timeline dot -->
                 <div class="shrink-0 w-12 h-12 rounded-full bg-teal-100 dark:bg-teal-900/40 border-2 border-teal-300 dark:border-teal-700 flex items-center justify-center z-10">
-                    <span class="text-lg">🏥</span>
+                    <span class="text-lg"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/hospital.svg' ignore missing %}</svg></span>
                 </div>
 
                 <!-- Card -->
@@ -78,7 +78,7 @@
                     </div>
 
                     {% if v.doctor %}
-                    <p class="text-sm text-slate-500 mb-2">👨‍⚕️ {{ v.doctor }}</p>
+                    <p class="text-sm text-slate-500 mb-2"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/stethoscope.svg' ignore missing %}</svg> {{ v.doctor }}</p>
                     {% endif %}
 
                     {% if v.chief_complaint %}
@@ -95,7 +95,7 @@
                     {% endif %}
 
                     {% if v.next_followup_date %}
-                    <p class="text-sm mt-3 text-teal-600 dark:text-teal-400 font-medium">📅 下次复诊: {{ v.next_followup_date }}</p>
+                    <p class="text-sm mt-3 text-teal-600 dark:text-teal-400 font-medium"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/calendar.svg' ignore missing %}</svg> 下次复诊: {{ v.next_followup_date }}</p>
                     {% endif %}
                 </div>
             </div>
@@ -105,7 +105,7 @@
     {% else %}
     <!-- Empty state -->
     <div class="flex flex-col items-center justify-center py-20 text-slate-400">
-        <span class="text-5xl mb-4">🏥</span>
+        <span class="text-5xl mb-4"><svg class="inline-block align-middle" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/hospital.svg' ignore missing %}</svg></span>
         <h2 class="text-lg font-medium text-slate-500 mb-2">还没有就诊记录</h2>
         <p class="text-sm mb-6">记录就诊信息，方便回顾和管理健康</p>
         <a href="/visits/new{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}"

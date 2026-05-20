@@ -6,7 +6,7 @@
     <div class="mb-6 flex items-center gap-3">
         <a href="/visits{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition">←</a>
         <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">
-            {{ '✏️ 编辑就诊' if visit else '🏥 新增就诊' }}
+            {% if visit %}<svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/pencil.svg' ignore missing %}</svg> 编辑就诊{% else %}<svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/hospital.svg' ignore missing %}</svg> 新增就诊{% endif %}
         </h1>
     </div>
 
@@ -116,7 +116,7 @@
         <div class="flex gap-3 pt-2">
             <button type="submit"
                     class="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-xl transition shadow-sm">
-                ✓ 保存
+                <svg class="inline-block align-middle text-teal-500" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/check.svg' ignore missing %}</svg> 保存
             </button>
             <a href="/visits{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}"
                class="px-6 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition">

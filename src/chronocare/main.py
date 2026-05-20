@@ -31,6 +31,11 @@ _TEMPLATES = _BASE / "templates"
 # Mount static files
 app.mount("/static", StaticFiles(directory=str(_STATIC)), name="static")
 
+# Mount uploads for image previews
+_UPLOADS = Path("uploads")
+if _UPLOADS.exists():
+    app.mount("/uploads", StaticFiles(directory=str(_UPLOADS)), name="uploads")
+
 # Template engine
 templates = Jinja2Templates(directory=str(_TEMPLATES))
 

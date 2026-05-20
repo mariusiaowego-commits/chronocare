@@ -44,7 +44,7 @@ function initBsTrendChart(labels, values) {
 <div class="max-w-5xl mx-auto">
     <!-- Header -->
     <div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
-        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">🩸 血糖监控</h1>
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/droplet.svg' ignore missing %}</svg> 血糖监控</h1>
         <a href="/blood-sugar/new{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}"
            class="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-medium transition shadow-sm">
             + 记录血糖
@@ -53,7 +53,7 @@ function initBsTrendChart(labels, values) {
 
     <!-- Person filter pills -->
     <div class="mb-5 flex gap-2 flex-wrap items-center">
-        <span class="text-sm text-slate-500 mr-1">👤</span>
+        <span class="text-sm text-slate-500 mr-1"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/user.svg' ignore missing %}</svg></span>
         <!-- Desktop: Buttons -->
         <div class="hidden lg:flex gap-2 flex-wrap items-center">
             <a href="/blood-sugar"
@@ -88,7 +88,7 @@ function initBsTrendChart(labels, values) {
     {% if chart_labels %}
     <div class="card-animate mb-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
         <div class="flex items-center justify-between mb-4">
-            <h3 class="font-semibold text-slate-700 dark:text-slate-200">📈 血糖趋势</h3>
+            <h3 class="font-semibold text-slate-700 dark:text-slate-200"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/trending-up.svg' ignore missing %}</svg> 血糖趋势</h3>
         </div>
         <div style="height:200px">
             <canvas id="bsTrendChart"></canvas>
@@ -129,7 +129,7 @@ function initBsTrendChart(labels, values) {
                         {{ r.value }} <span class="text-xs font-normal text-slate-400">mmol/L</span>
                     </td>
                     <td class="px-4 py-3 text-center">
-                        {% if r.is_alert %}<span class="text-red-500 text-lg">⚠️</span>{% else %}<span class="text-teal-500">✓</span>{% endif %}
+                        {% if r.is_alert %}<span class="text-red-500 text-lg"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/triangle-alert.svg' ignore missing %}</svg></span>{% else %}<span class="text-teal-500"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/check.svg' ignore missing %}</svg></span>{% endif %}
                     </td>
                     <td class="px-4 py-3 text-slate-500 text-xs">{{ r.notes or '' }}</td>
                 </tr>
@@ -140,7 +140,7 @@ function initBsTrendChart(labels, values) {
     {% else %}
     <!-- Empty state -->
     <div class="flex flex-col items-center justify-center py-20 text-slate-400">
-        <span class="text-5xl mb-4">🩸</span>
+        <span class="text-5xl mb-4"><svg class="inline-block align-middle" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/droplet.svg' ignore missing %}</svg></span>
         <h2 class="text-lg font-medium text-slate-500 mb-2">还没有血糖记录</h2>
         <p class="text-sm mb-6">开始记录，掌握血糖变化趋势</p>
         <a href="/blood-sugar/new{% if selected_person_id %}?person_id={{ selected_person_id }}{% endif %}"

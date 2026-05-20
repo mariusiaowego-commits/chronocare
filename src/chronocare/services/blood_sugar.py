@@ -150,7 +150,7 @@ async def get_blood_sugar_trend(
         alerts.append({
             "type": "consecutive_high",
             "severity": "high",
-            "icon": "🔴",
+            "icon": "circle-alert",
             "message": f"连续{consecutive_high}次高血糖"
         })
     
@@ -158,18 +158,18 @@ async def get_blood_sugar_trend(
         alerts.append({
             "type": "sustained_elevation",
             "severity": "medium",
-            "icon": "🟡",
+            "icon": "triangle-alert",
             "message": f"{days}天平均值偏高 ({avg_value:.1f})"
         })
     
     if len(values) >= 3 and values[-1] - values[-3] > 3:
-        alerts.append({"type": "rapid_increase", "severity": "high", "icon": "🔺", "message": "血糖快速上升"})
+        alerts.append({"type": "rapid_increase", "severity": "high", "icon": "trending-up", "message": "血糖快速上升"})
     
     if values[-1] > 11.1:
         alerts.append({
             "type": "very_high",
             "severity": "critical",
-            "icon": "🚨",
+            "icon": "circle-alert",
             "message": f"当前血糖严重偏高 ({values[-1]:.1f})"
         })
     

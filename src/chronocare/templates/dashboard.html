@@ -59,7 +59,7 @@ function initBsChart(labels, values, statuses) {
 <div class="max-w-7xl mx-auto">
     <!-- ── Person Switcher ── -->
     <div class="mb-6 flex items-center justify-between gap-4 flex-wrap">
-        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">📊 仪表盘</h1>
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/layout-dashboard.svg' ignore missing %}</svg> 仪表盘</h1>
         {% if persons %}
         <!-- Desktop: Buttons -->
         <div class="hidden lg:flex gap-2 flex-wrap">
@@ -68,7 +68,7 @@ function initBsChart(labels, values, statuses) {
                class="card-animate px-4 py-2 rounded-full text-sm font-medium transition-all
                       {{ 'bg-sky-600 text-white shadow-md ring-2 ring-sky-400' if selected and selected.id == p.id
                          else 'bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-sky-400 dark:hover:border-sky-500 hover:text-sky-600 dark:hover:text-sky-300' }}">
-                {{ '👩' if p.gender == 'F' else '👨' if p.gender == 'M' else '👤' }} {{ p.name }}
+                <svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/user.svg' ignore missing %}</svg> {{ p.name }}
             </a>
             {% endfor %}
         </div>
@@ -80,7 +80,7 @@ function initBsChart(labels, values, statuses) {
                            focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 cursor-pointer">
                 {% for p in persons %}
                 <option value="/dashboard?person_id={{ p.id }}" {{ 'selected' if selected and selected.id == p.id }}>
-                    {{ '👩' if p.gender == 'F' else '👨' if p.gender == 'M' else '👤' }} {{ p.name }}
+                    {{ p.name }}
                 </option>
                 {% endfor %}
             </select>
@@ -93,7 +93,7 @@ function initBsChart(labels, values, statuses) {
     {% if alerts %}
     <div class="mb-6 rounded-2xl border-2 {{ 'border-red-400 bg-red-50 dark:bg-red-900/20' if has_critical else 'border-amber-300 bg-amber-50 dark:bg-amber-900/20' }} p-5 card-animate">
         <div class="flex items-center gap-2 mb-4">
-            <span class="text-xl">{{ '🚨' if has_critical else '⚠️' }}</span>
+            {% if has_critical %}<svg class="inline-block align-middle text-red-500" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/circle-alert.svg' ignore missing %}</svg>{% else %}<svg class="inline-block align-middle text-amber-500" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/triangle-alert.svg' ignore missing %}</svg>{% endif %}
             <h2 class="font-semibold text-base {{ 'text-red-800 dark:text-red-300' if has_critical else 'text-amber-800 dark:text-amber-300' }}">
                 健康预警 ({{ alert_count }} 项)
             </h2>
@@ -101,7 +101,7 @@ function initBsChart(labels, values, statuses) {
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {% for alert in alerts %}
             <div class="flex items-start gap-3 p-3 rounded-xl {{ 'bg-red-100/70 dark:bg-red-900/30' if alert.severity == 'critical' else 'bg-amber-100/70 dark:bg-amber-900/30' if alert.severity == 'high' else 'bg-orange-100/70 dark:bg-orange-900/30' }}">
-                <span class="text-lg mt-0.5">{{ alert.icon }}</span>
+                <svg class="inline-block align-middle {{ 'text-red-500' if alert.severity == 'critical' else 'text-amber-500' }}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/' ~ alert.icon ~ '.svg' ignore missing %}</svg>
                 <div>
                     <p class="font-semibold text-sm {{ 'text-red-800 dark:text-red-300' if alert.severity == 'critical' else 'text-amber-800 dark:text-amber-300' }}">{{ alert.title }}</p>
                     <p class="text-xs mt-0.5 {{ 'text-red-600 dark:text-red-400' if alert.severity == 'critical' else 'text-amber-600 dark:text-amber-400' }}">{{ alert.message }}</p>
@@ -113,10 +113,10 @@ function initBsChart(labels, values, statuses) {
     {% endif %}
 
     <!-- ── Profile Card ── -->
-    <div class="card-animate mb-6 bg-gradient-to-r from-sky-500 to-cyan-500 rounded-2xl p-6 text-white shadow-lg">
+    <div class="card-animate mb-6 bg-gradient-to-r {{ 'from-pink-500 to-rose-500' if selected.gender == 'F' else 'from-sky-500 to-cyan-500' }} rounded-2xl p-6 text-white shadow-lg">
         <div class="flex items-start justify-between flex-wrap gap-4">
             <div class="flex items-center gap-4">
-                <span class="text-5xl">{{ '👩' if selected.gender == 'F' else '👨' if selected.gender == 'M' else '👤' }}</span>
+                <span class="text-5xl"><svg class="inline-block align-middle" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/user.svg' ignore missing %}</svg></span>
                 <div>
                     <h2 class="text-2xl font-bold">{{ selected.name }}</h2>
                     <p class="opacity-90 text-sm mt-1">
@@ -136,7 +136,7 @@ function initBsChart(labels, values, statuses) {
             </div>
             <a href="/persons/{{ selected.id }}"
                class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-medium transition backdrop-blur-sm">
-                ✏️ 编辑档案
+                <svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/pencil.svg' ignore missing %}</svg> 编辑档案
             </a>
         </div>
     </div>
@@ -145,22 +145,22 @@ function initBsChart(labels, values, statuses) {
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
         <a href="/blood-sugar/new?person_id={{ selected.id }}"
            class="card-animate card-interactive text-center p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-sky-300 dark:hover:border-sky-600 transition shadow-sm">
-            <span class="text-3xl">🩸</span>
+            <span class="text-3xl"><svg class="inline-block align-middle" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/droplet.svg' ignore missing %}</svg></span>
             <p class="text-sm font-medium mt-2 text-slate-700 dark:text-slate-200">记录血糖</p>
         </a>
         <a href="/visits/new?person_id={{ selected.id }}"
            class="card-animate card-interactive text-center p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-sky-300 dark:hover:border-sky-600 transition shadow-sm">
-            <span class="text-3xl">🏥</span>
+            <span class="text-3xl"><svg class="inline-block align-middle" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/hospital.svg' ignore missing %}</svg></span>
             <p class="text-sm font-medium mt-2 text-slate-700 dark:text-slate-200">添加就诊</p>
         </a>
         <a href="/medical-records/new?person_id={{ selected.id }}"
            class="card-animate card-interactive text-center p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-sky-300 dark:hover:border-sky-600 transition shadow-sm">
-            <span class="text-3xl">📄</span>
+            <span class="text-3xl"><svg class="inline-block align-middle" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/file-text.svg' ignore missing %}</svg></span>
             <p class="text-sm font-medium mt-2 text-slate-700 dark:text-slate-200">就医OCR</p>
         </a>
         <a href="/visits?person_id={{ selected.id }}"
            class="card-animate card-interactive text-center p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-sky-300 dark:hover:border-sky-600 transition shadow-sm">
-            <span class="text-3xl">📋</span>
+            <span class="text-3xl"><svg class="inline-block align-middle" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/clipboard-list.svg' ignore missing %}</svg></span>
             <p class="text-sm font-medium mt-2 text-slate-700 dark:text-slate-200">就诊记录</p>
         </a>
     </div>
@@ -170,7 +170,7 @@ function initBsChart(labels, values, statuses) {
         <!-- BS Trend Chart -->
         <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="font-semibold text-slate-700 dark:text-slate-200">🩸 血糖趋势 (近14天)</h3>
+                <h3 class="font-semibold text-slate-700 dark:text-slate-200"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/droplet.svg' ignore missing %}</svg> 血糖趋势 (近14天)</h3>
                 <a href="/blood-sugar?person_id={{ selected.id }}" class="text-xs text-sky-600 hover:underline">查看全部 →</a>
             </div>
             {% if chart_labels %}
@@ -179,7 +179,7 @@ function initBsChart(labels, values, statuses) {
             </div>
             {% else %}
             <div class="flex flex-col items-center justify-center py-12 text-slate-400">
-                <span class="text-4xl mb-3">📊</span>
+                <span class="text-4xl mb-3"><svg class="inline-block align-middle" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/layout-dashboard.svg' ignore missing %}</svg></span>
                 <p class="text-sm">暂无血糖数据</p>
                 <a href="/blood-sugar/new?person_id={{ selected.id }}" class="mt-2 text-sky-600 text-sm hover:underline">立即录入</a>
             </div>
@@ -189,7 +189,7 @@ function initBsChart(labels, values, statuses) {
         <!-- Recent BS Records -->
         <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="font-semibold text-slate-700 dark:text-slate-200">🩸 最近血糖</h3>
+                <h3 class="font-semibold text-slate-700 dark:text-slate-200"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/droplet.svg' ignore missing %}</svg> 最近血糖</h3>
                 <a href="/blood-sugar?person_id={{ selected.id }}" class="text-xs text-sky-600 hover:underline">查看全部 →</a>
             </div>
             {% if bs_records %}
@@ -216,7 +216,7 @@ function initBsChart(labels, values, statuses) {
             </div>
             {% else %}
             <div class="flex flex-col items-center justify-center py-10 text-slate-400">
-                <span class="text-3xl mb-2">🩸</span>
+                <span class="text-3xl mb-2"><svg class="inline-block align-middle" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/droplet.svg' ignore missing %}</svg></span>
                 <p class="text-sm">暂无血糖记录</p>
             </div>
             {% endif %}
@@ -225,14 +225,14 @@ function initBsChart(labels, values, statuses) {
         <!-- Recent Visits -->
         <div class="card-animate bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm lg:col-span-2">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="font-semibold text-slate-700 dark:text-slate-200">🏥 最近就诊</h3>
+                <h3 class="font-semibold text-slate-700 dark:text-slate-200"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/hospital.svg' ignore missing %}</svg> 最近就诊</h3>
                 <a href="/visits?person_id={{ selected.id }}" class="text-xs text-sky-600 hover:underline">查看全部 →</a>
             </div>
             {% if visits %}
             <div class="grid gap-3 sm:grid-cols-2">
                 {% for v in visits %}
                 <div class="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
-                    <span class="text-lg mt-0.5">🏥</span>
+                    <span class="text-lg mt-0.5"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/hospital.svg' ignore missing %}</svg></span>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center justify-between gap-2">
                             <p class="font-medium text-sm truncate">{{ v.hospital or '未记录医院' }}</p>
@@ -240,14 +240,14 @@ function initBsChart(labels, values, statuses) {
                         </div>
                         {% if v.department %}<p class="text-xs text-slate-500 mt-0.5">{{ v.department }}{% if v.doctor %} · {{ v.doctor }}{% endif %}</p>{% endif %}
                         {% if v.diagnosis %}<p class="text-xs text-slate-500 mt-1 truncate">诊断: {{ v.diagnosis }}</p>{% endif %}
-                        {% if v.next_followup_date %}<p class="text-xs text-sky-600 mt-1">📅 复诊: {{ v.next_followup_date }}</p>{% endif %}
+                        {% if v.next_followup_date %}<p class="text-xs text-sky-600 mt-1"><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/calendar.svg' ignore missing %}</svg> 复诊: {{ v.next_followup_date }}</p>{% endif %}
                     </div>
                 </div>
                 {% endfor %}
             </div>
             {% else %}
             <div class="flex flex-col items-center justify-center py-10 text-slate-400">
-                <span class="text-3xl mb-2">🏥</span>
+                <span class="text-3xl mb-2"><svg class="inline-block align-middle" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/hospital.svg' ignore missing %}</svg></span>
                 <p class="text-sm">暂无就诊记录</p>
             </div>
             {% endif %}
@@ -257,7 +257,7 @@ function initBsChart(labels, values, statuses) {
     {% else %}
     <!-- ── Empty state ── -->
     <div class="flex flex-col items-center justify-center py-24 text-slate-400">
-        <span class="text-6xl mb-6">👤</span>
+        <span class="text-6xl mb-6"><svg class="inline-block align-middle" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/user.svg' ignore missing %}</svg></span>
         <h2 class="text-xl font-semibold text-slate-600 dark:text-slate-300 mb-2">还没有添加老人</h2>
         <p class="text-sm mb-6">添加第一位老人，开始健康管理</p>
         <a href="/persons/new"
