@@ -82,9 +82,23 @@
 - 图片预览: `/uploads` 静态挂载 + `<img>` + Lightbox
 - 女性角色深粉红: Dashboard 渐变 + 列表边框 + 详情图标
 
+## 2026-05-25 改动摘要
+
+### 数据清理
+- 删除 medical_records id=114 (重复测试残留)
+- 删除 30 条 "测试人员" persons + 32 条孤儿 medical_records
+- 保留 21 条血糖记录 (待确认是否真实数据)
+
+### 代码质量
+- ruff 零警告: test_normalize.py (I001 + F541)
+
+### OCR 管线验证
+- vision_analyze 识别真实化验单: 22 项，status 判断正确
+- 规范化层 + 页面渲染均正常，管线无退化
+
 ## Git
 - 分支: main
-- 最新 commit: 820a0e9
+- 最新 commit: ba44ce3
 - pyproject.toml version: 0.5.0
 - 测试: 41/41 通过
 
