@@ -1,4 +1,5 @@
 import json
+
 from chronocare.services.medical_record import normalize_lab_results
 
 # Extract the raw lab results from the vision_analyze response
@@ -39,7 +40,7 @@ print(json.dumps(normalized, indent=2, ensure_ascii=False))
 
 # Verify normalization
 abnormal_count = sum(1 for t in normalized['tests'] if t['status'] != 'normal')
-print(f"\n=== 验证结果 ===")
+print("\n=== 验证结果 ===")
 print(f"异常指标数: {abnormal_count}")
 print("Status 均已规范化为模板识别的值: {}".format(
     all(t['status'] in ['normal', 'high', 'low', 'slightly_high', 'slightly_low'] for t in normalized['tests'])
