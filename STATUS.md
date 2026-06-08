@@ -82,6 +82,18 @@
 - 图片预览: `/uploads` 静态挂载 + `<img>` + Lightbox
 - 女性角色深粉红: Dashboard 渐变 + 列表边框 + 详情图标
 
+## 2026-06-08 改动摘要
+
+### tjh 就诊记录批量导入
+- 49 个 PDF (2024-03-13 ~ 2026-05-27) → 49 MedicalRecord + 41 Visit (person_id=2)
+- 解析策略: pdftotext + 正则; 修复 `诊 断` 正则会误抓现病史段的 bug
+- `VisitRead.attachments` schema 修复: `dict` → `list[str]` (解决 /api/visits 500)
+- 新增 `scripts/import_tjh_pdfs.py` (--dry-run / 真实导入 / --rollback 三模式)
+- DB 备份: `data/backups/chronocare-pre-tjh-import-20260608-171018.db`
+- 分支: `feature/tjh-import-49-pdfs` (从 main @ 5a93976)
+- 端口: 8000 = chronocare (现有 --reload 长跑), 不要启新进程
+- 详情: `260608-handoff.md` + `vibe-coding-log/2026-06-08.md`
+
 ## 2026-05-25 改动摘要
 
 ### 数据清理
@@ -97,10 +109,11 @@
 - 规范化层 + 页面渲染均正常，管线无退化
 
 ## Git
-- 分支: main
-- 最新 commit: ba44ce3
+- 当前分支: `feature/tjh-import-49-pdfs` (worktree, 来自 main @ 5a93976)
+- main 最新 commit: 5a93976
+- tag: `pre-tjh-import` (DB state 文档标记)
 - pyproject.toml version: 0.5.0
-- 测试: 41/41 通过
+- 测试: 41/41 通过 (smoke 2/2 已验证, 全量测试由 scout 跑)
 
 ## 开发命令
 ```bash
