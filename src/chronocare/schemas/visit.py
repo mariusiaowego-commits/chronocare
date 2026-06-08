@@ -17,7 +17,7 @@ class VisitBase(BaseModel):
     prescription: str | None = None
     doctor_advice: str | None = None
     next_followup_date: date | None = None
-    attachments: dict | None = None
+    attachments: list[str] | None = None  # paths to PDF/image attachments; matches Visit.attachments JSON array
 
 
 class VisitCreate(VisitBase):
@@ -35,7 +35,7 @@ class VisitUpdate(BaseModel):
     prescription: str | None = None
     doctor_advice: str | None = None
     next_followup_date: date | None = None
-    attachments: dict | None = None
+    attachments: list[str] | None = None  # JSON array, see VisitBase
 
 
 class VisitRead(VisitBase):
