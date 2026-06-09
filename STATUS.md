@@ -1,6 +1,6 @@
 # ChronoCare STATUS
 
-> 最后更新: 2026-06-08
+> 最后更新: 2026-06-09
 
 ## 当前阶段: v0.5.0 + 前端重设计 + 表单校验 + UX 优化
 
@@ -81,6 +81,22 @@
 - 移动端抽屉不响应: 移除冲突的 `transform` class + resize 监听
 - 图片预览: `/uploads` 静态挂载 + `<img>` + Lightbox
 - 女性角色深粉红: Dashboard 渐变 + 列表边框 + 详情图标
+
+## 2026-06-09 改动摘要
+
+### 云胶片影像查看器
+- 新增 `/cloud-films` 路由，按 DICOM series 分类展示 CT 影像
+- 10 个影像序列：定位像、心脏薄层、增强薄层、AI 分析等（共 1377/1512 张）
+- 全屏查看模式：键盘左右切换、Escape 退出
+- sidebar 导航集成，深色模式支持
+- XHR 拦截 + UID 映射下载方案（绕过 Playwright UTF-8 charset 解码损坏）
+- 分支: `main` (commit 973136a)
+
+### AGENTS.md 优化
+- 融合 dizical 项目的 git/GitHub 工作流习惯
+- 新增：feature branch → PR（未测不推）
+- 新增：HTTPS push fallback 配置
+- 新增：收尾 Checklist（9 项）
 
 ## 2026-06-08 改动摘要
 

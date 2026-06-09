@@ -127,16 +127,31 @@ v0.5.0 已集成两层 OCR Pipeline:
 - Layer 2: LLM 结构化解析 (services/ocr_parser.py, OpenRouter/Gemini)
 - 支持4种类型: 就医记录/化验报告/处方/医嘱
 
-## 注意
+## Git 工作流
+- **feature branch → PR（未测不推）**
 - GitHub push/pull 用 HTTPS URL
-- 有 DEV_PLAN.md / STATUS.md 追踪进度
-- 数据库文件: chronocare.db (SQLite)
+- 代理挂了就改 HTTPS：`git config --local remote.origin.pushurl https://github.com/mariusiaowego-commits/chronocare.git`
+- 改 UI 工作流: 写组件 → feature branch → PR
 
 ## 收尾文档
 - STATUS.md — 项目根目录
 - DEV_PLAN.md — 项目根目录
 - vibe-coding-log/ — 项目根目录，按日期记录
 - wiki — `hermes-base/projects/project-chronocare.md`
+
+## 收尾 Checklist（每次会话结束前必须执行）
+
+```
+□ STATUS.md — 本次修改涉及的功能，对应条目是否更新（日期 + 阶段描述）
+□ vibe-coding-log — 新增当日记录，append 到文件开头
+□ handoff-YYMM-DD.md — 完整记录含待办清单，写入项目根目录
+□ Git — 测通后 add → commit → feature branch → PR（未测不推）
+□ Git push — 确保所有 commits 推送到 origin
+□ README — 本次改动需要同步更新文档
+□ 服务验证 — curl 页面确认 200 OK
+□ 用户确认 — 展示最终结果
+□ Wiki沉淀 — 发现新模式/踩坑记录/项目惯例，同步到 hermes-base/projects/
+```
 
 ## Session 收尾规范 (强制)
 
