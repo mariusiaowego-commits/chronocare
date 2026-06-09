@@ -1,11 +1,17 @@
 """Person and Condition models."""
 
+from __future__ import annotations
+
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import JSON, CheckConstraint, ForeignKey, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from chronocare.models.base import Base
+
+if TYPE_CHECKING:
+    from chronocare.models.report_generation import ReportGeneration
 
 
 class Person(Base):
@@ -31,6 +37,9 @@ class Person(Base):
 
     # Relationships
     conditions: Mapped[list[Condition]] = relationship(back_populates="person", cascade="all, delete-orphan")
+    report_generations: Mapped[list[ReportGeneration]] = relationship(
+        back_populates="person", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Person(id={self.id}, name='{self.name}')>"
