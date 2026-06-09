@@ -16,6 +16,7 @@ from chronocare.routers.api.visit import router as api_visit_router
 
 # Page routers
 from chronocare.routers.pages.blood_sugar import router as pages_bs_router
+from chronocare.routers.pages.cloud_film import router as pages_cloud_film_router
 from chronocare.routers.pages.dashboard import router as pages_dashboard_router
 from chronocare.routers.pages.medical_record import router as pages_medical_record_router
 from chronocare.routers.pages.person import router as pages_person_router
@@ -36,6 +37,13 @@ _UPLOADS = Path("uploads")
 if _UPLOADS.exists():
     app.mount("/uploads", StaticFiles(directory=str(_UPLOADS)), name="uploads")
 
+# Mount data directory for cloud film images
+# Project root is 3 levels up from src/chronocare/main.py
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+_DATA_DIR = _PROJECT_ROOT / "data"
+if _DATA_DIR.exists():
+    app.mount("/data", StaticFiles(directory=str(_DATA_DIR)), name="data")
+
 # Template engine
 templates = Jinja2Templates(directory=str(_TEMPLATES))
 
@@ -52,6 +60,7 @@ app.include_router(pages_person_router)
 app.include_router(pages_bs_router)
 app.include_router(pages_visit_router)
 app.include_router(pages_medical_record_router)
+app.include_router(pages_cloud_film_router)
 
 
 @app.get("/")
