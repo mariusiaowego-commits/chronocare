@@ -128,10 +128,12 @@ v0.5.0 已集成两层 OCR Pipeline:
 - 支持4种类型: 就医记录/化验报告/处方/医嘱
 
 ## Git 工作流
-- **feature branch → PR（未测不推）**
-- GitHub push/pull 用 HTTPS URL
-- 代理挂了就改 HTTPS：`git config --local remote.origin.pushurl https://github.com/mariusiaowego-commits/chronocare.git`
-- 改 UI 工作流: 写组件 → feature branch → PR
+- **feature branch → commit → PR（未测不推）**
+- 单人开发，不用 worktree，直接在本地拉 feature branch
+- 分支命名: `feat/<功能名>` 或 `fix/<bug名>`
+- 流程: `git checkout -b feat/xxx` → 开发 → commit → push → PR → merge → 删分支
+- GitHub push/pull 用 SSH（fallback HTTPS: `git config --local remote.origin.pushurl https://github.com/mariusiaowego-commits/chronocare.git`）
+- main 保持干净，所有改动走 feature branch
 
 ## 收尾文档
 - STATUS.md — 项目根目录
