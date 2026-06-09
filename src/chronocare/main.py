@@ -12,6 +12,7 @@ from chronocare.routers.api.backup import router as api_backup_router
 from chronocare.routers.api.blood_sugar import router as api_bs_router
 from chronocare.routers.api.medical_record import router as api_medical_record_router
 from chronocare.routers.api.person import router as api_person_router
+from chronocare.routers.api.report import router as api_report_router
 from chronocare.routers.api.visit import router as api_visit_router
 
 # Page routers
@@ -53,6 +54,7 @@ app.include_router(api_person_router)
 app.include_router(api_bs_router)
 app.include_router(api_visit_router)
 app.include_router(api_medical_record_router)
+app.include_router(api_report_router)
 
 # Register page routers
 app.include_router(pages_dashboard_router)
