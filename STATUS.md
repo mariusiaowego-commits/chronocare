@@ -124,11 +124,21 @@
 - vision_analyze 识别真实化验单: 22 项，status 判断正确
 - 规范化层 + 页面渲染均正常，管线无退化
 
+## 2026-06-09 改动摘要
+
+### 健康报告图 Feature (PR #4)
+- `feat/health-report` 分支, 4 commits
+- T1: ReportGeneration model + data aggregation + API
+- T3: Hermes CLI subprocess image_generate + baoyu prompt
+- T6: 前端 modal + 历史列表 + dashboard 入口
+- 测试: 49/49 通过 (含 8 个新测试)
+
 ## Git
-- 当前分支: `main` @ f4eaa8e
+- 当前分支: `main` @ 47bca7e
+- feature branch: `feat/health-report` → PR #4
 - 工作流: feature branch → commit → PR（不用 worktree）
 - pyproject.toml version: 0.5.0
-- 测试: 41/41 通过 (smoke 2/2 已验证, 全量测试由 scout 跑)
+- 测试: 49/49 通过
 
 ## 开发命令
 ```bash

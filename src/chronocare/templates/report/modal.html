@@ -1,0 +1,151 @@
+{# Report generation modal — loaded via HTMX into #report-modal-overlay #}
+{% from 'macros/icon.html' import icon %}
+
+<div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-lg w-full mx-4 overflow-hidden"
+     onclick="event.stopPropagation()">
+
+  {# Header #}
+  <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+    <div class="flex items-center gap-3">
+      {{ icon('file-text', 22, 'text-sky-600') }}
+      <div>
+        <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">生成健康报告</h3>
+        <p class="text-sm text-slate-500 dark:text-slate-400">{{ person.name }}</p>
+      </div>
+    </div>
+    <button onclick="closeReportModal()"
+            class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+      {{ icon('x', 18, 'text-slate-400') }}
+    </button>
+  </div>
+
+  {# Layout selection #}
+  <div class="px-6 py-5">
+    <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">选择报告版本：</p>
+
+    <div class="grid grid-cols-2 gap-3 mb-5">
+      {# PC version #}
+      <button onclick="generateReport({{ person.id }}, 'pc')"
+              class="group relative p-4 rounded-xl border-2 border-slate-200 dark:border-slate-600
+                     hover:border-sky-400 dark:hover:border-sky-500 transition text-left">
+        <div class="flex items-center gap-2 mb-2">
+          {{ icon('layout-dashboard', 18, 'text-sky-600') }}
+          <span class="font-medium text-slate-800 dark:text-slate-100">PC 版</span>
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          详细版 · A4 打印友好<br>路线图 + 数据卡片
+        </p>
+      </button>
+
+      {# Mobile version #}
+      <button onclick="generateReport({{ person.id }}, 'mobile')"
+              class="group relative p-4 rounded-xl border-2 border-slate-200 dark:border-slate-600
+                     hover:border-sky-400 dark:hover:border-sky-500 transition text-left">
+        <div class="flex items-center gap-2 mb-2">
+          {{ icon('droplet', 18, 'text-teal-600') }}
+          <span class="font-medium text-slate-800 dark:text-slate-100">Mobile 版</span>
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          大字简洁 · 微信分享<br>核心 3~5 项
+        </p>
+      </button>
+    </div>
+
+    {# Generation status area (populated by polling) #}
+    <div id="report-gen-status" class="hidden"></div>
+
+    {# Recent reports #}
+    {% if reports %}
+    <div class="border-t border-slate-200 dark:border-slate-700 pt-4 mt-2">
+      <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">最近生成</p>
+      <div class="space-y-2">
+        {% for r in reports %}
+        <div class="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg
+                    bg-slate-50 dark:bg-slate-700/50">
+          <div class="flex items-center gap-2">
+            {% if r.layout == 'pc' %}
+              {{ icon('layout-dashboard', 14, 'text-sky-500') }}
+            {% else %}
+              {{ icon('droplet', 14, 'text-teal-500') }}
+            {% endif %}
+            <span class="text-slate-700 dark:text-slate-200">
+              {{ 'PC 版' if r.layout == 'pc' else 'Mobile 版' }}
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            {% if r.status == 'completed' %}
+              <span class="text-xs text-emerald-600 dark:text-emerald-400">✓</span>
+            {% elif r.status == 'failed' %}
+              <span class="text-xs text-red-500">✗</span>
+            {% else %}
+              <span class="text-xs text-slate-400">{{ r.status }}</span>
+            {% endif %}
+            <span class="text-xs text-slate-400">{{ r.created_at.strftime('%m-%d %H:%M') }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function generateReport(personId, layout) {
+  const statusEl = document.getElementById('report-gen-status');
+  statusEl.classList.remove('hidden');
+  statusEl.innerHTML = `
+    <div class="flex items-center gap-2 text-sm text-sky-600 dark:text-sky-400 py-2">
+      <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25"/>
+        <path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      正在生成${layout === 'pc' ? 'PC' : 'Mobile'}版报告…
+    </div>`;
+
+  fetch(`/api/persons/${personId}/reports/generate`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({layout: layout})
+  })
+  .then(r => r.json())
+  .then(data => {
+    pollReportStatus(data.id, statusEl);
+  })
+  .catch(err => {
+    statusEl.innerHTML = `<p class="text-sm text-red-500">请求失败: ${err.message}</p>`;
+  });
+}
+
+function pollReportStatus(reportId, statusEl) {
+  let attempts = 0;
+  const maxAttempts = 30;
+  const interval = setInterval(() => {
+    attempts++;
+    if (attempts > maxAttempts) {
+      clearInterval(interval);
+      statusEl.innerHTML = `<p class="text-sm text-amber-500">生成超时，请稍后在报告历史中查看</p>`;
+      return;
+    }
+
+    fetch(`/api/reports/${reportId}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === 'completed') {
+          clearInterval(interval);
+          statusEl.innerHTML = `
+            <div class="text-sm text-emerald-600 dark:text-emerald-400 py-2">
+              ✓ 生成完成 (${data.generation_seconds}s)
+            </div>`;
+          // Refresh history
+          htmx.ajax('GET', '/reports/history/${data.person_id}', {target: '#report-history-area'});
+        } else if (data.status === 'failed') {
+          clearInterval(interval);
+          statusEl.innerHTML = `<p class="text-sm text-red-500">生成失败: ${data.error_message || '未知错误'}</p>`;
+        }
+        // else still generating, keep polling
+      })
+      .catch(() => {}); // ignore transient errors
+  }, 2000);
+}
+</script>
