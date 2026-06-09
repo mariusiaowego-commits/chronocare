@@ -125,9 +125,8 @@
 - 规范化层 + 页面渲染均正常，管线无退化
 
 ## Git
-- 当前分支: `feature/tjh-import-49-pdfs` (worktree, 来自 main @ 5a93976)
-- main 最新 commit: 5a93976
-- tag: `pre-tjh-import` (DB state 文档标记)
+- 当前分支: `main` @ f4eaa8e
+- 工作流: feature branch → commit → PR（不用 worktree）
 - pyproject.toml version: 0.5.0
 - 测试: 41/41 通过 (smoke 2/2 已验证, 全量测试由 scout 跑)
 
