@@ -83,7 +83,7 @@ def extract_doctor(text: str | None, known_doctors: set[str] | None = None) -> s
     }
 
     cands = re.findall(
-        r"(?<![\\u4e00-\\u9fff])([\\u4e00-\\u9fff]{2,3})(?![\\u4e00-\\u9fff])",
+        r"(?<![\u4e00-\u9fff])([\u4e00-\u9fff]{2,3})(?![\u4e00-\u9fff])",
         candidate_text,
     )
 
