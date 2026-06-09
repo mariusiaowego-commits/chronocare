@@ -15,10 +15,16 @@
                 </p>
             </div>
         </div>
-        <a href="/persons/{{ person.id }}/edit"
-           class="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition">
-            <svg class="inline-block align-middle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/pencil.svg' ignore missing %}</svg> 编辑
-        </a>
+        <div class="flex items-center gap-2">
+            <a href="/persons/{{ person.id }}/edit"
+               class="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                <svg class="inline-block align-middle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/pencil.svg' ignore missing %}</svg> 编辑
+            </a>
+            <button onclick="openReportModal({{ person.id }})"
+                    class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg transition text-sm font-medium">
+                <svg class="inline-block align-middle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/file-text.svg' ignore missing %}</svg> 生成报告
+            </button>
+        </div>
     </div>
 
     <!-- 基本信息卡片 -->
@@ -116,5 +122,47 @@
             <p class="text-sm mt-1">新建就诊</p>
         </a>
     </div>
+    <!-- 报告历史 -->
+    <div class="mt-6">
+        <h2 class="font-semibold mb-3 flex items-center gap-2">
+            <svg class="inline-block align-middle" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/file-text.svg' ignore missing %}</svg>
+            健康报告历史
+        </h2>
+        <div id="report-history-area"
+             hx-get="/reports/history/{{ person.id }}"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+            <div class="text-center py-4 text-sm text-slate-400">加载中…</div>
+        </div>
+    </div>
 </div>
+
+{# Report modal overlay #}
+<div id="report-modal-overlay"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm"
+     onclick="closeReportModal()">
+    <div id="report-modal-content"></div>
+</div>
+
+<script>
+function openReportModal(personId) {
+    const overlay = document.getElementById('report-modal-overlay');
+    overlay.classList.remove('hidden');
+    overlay.classList.add('flex');
+    fetch(`/reports/modal/${personId}`)
+        .then(r => r.text())
+        .then(html => {
+            document.getElementById('report-modal-content').innerHTML = html;
+        });
+}
+function closeReportModal() {
+    const overlay = document.getElementById('report-modal-overlay');
+    overlay.classList.add('hidden');
+    overlay.classList.remove('flex');
+    document.getElementById('report-gen-status')?.classList.add('hidden');
+}
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeReportModal();
+});
+</script>
 {% endblock %}

@@ -1,0 +1,25 @@
+{# Report status — polled by HTMX #}
+{% if report %}
+  {% if report.status == 'completed' %}
+    <div class="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
+      <span>✓ 生成完成</span>
+      {% if report.generation_seconds %}
+        <span class="text-xs text-slate-400">({{ report.generation_seconds }}s)</span>
+      {% endif %}
+    </div>
+  {% elif report.status == 'failed' %}
+    <div class="text-sm text-red-500">
+      ✗ 失败: {{ report.error_message or '未知错误' }}
+    </div>
+  {% elif report.status == 'generating' %}
+    <div class="flex items-center gap-2 text-sm text-sky-600 dark:text-sky-400">
+      <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25"/>
+        <path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      正在生成…
+    </div>
+  {% else %}
+    <div class="text-sm text-amber-500">等待中…</div>
+  {% endif %}
+{% endif %}

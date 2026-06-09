@@ -1,0 +1,63 @@
+{# Report history list — HTMX fragment #}
+{% from 'macros/icon.html' import icon %}
+
+{% if reports %}
+<div class="space-y-2">
+  {% for r in reports %}
+  <div class="flex items-center justify-between py-2 px-3 rounded-lg
+              bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700
+              card-animate">
+    <div class="flex items-center gap-3">
+      {% if r.layout == 'pc' %}
+        {{ icon('layout-dashboard', 16, 'text-sky-500') }}
+      {% else %}
+        {{ icon('droplet', 16, 'text-teal-500') }}
+      {% endif %}
+      <div>
+        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">
+          {{ 'PC 版' if r.layout == 'pc' else 'Mobile 版' }}
+        </span>
+        <span class="text-xs text-slate-400 ml-2">
+          {{ r.created_at.strftime('%Y-%m-%d %H:%M') }}
+        </span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      {% if r.status == 'completed' %}
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
+                     bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+          ✓ 完成
+        </span>
+        {% if r.generation_seconds %}
+          <span class="text-xs text-slate-400">{{ r.generation_seconds }}s</span>
+        {% endif %}
+      {% elif r.status == 'generating' %}
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
+                     bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400">
+          <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25"/>
+            <path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+          生成中
+        </span>
+      {% elif r.status == 'pending' %}
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
+                     bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+          等待中
+        </span>
+      {% else %}
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
+                     bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+          ✗ 失败
+        </span>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-6 text-sm text-slate-400 dark:text-slate-500">
+  {{ icon('file-text', 24, 'mx-auto mb-2 opacity-40') }}
+  <p>暂无报告记录</p>
+</div>
+{% endif %}
