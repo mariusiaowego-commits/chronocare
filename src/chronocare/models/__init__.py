@@ -4,6 +4,7 @@ from chronocare.models.base import Base
 from chronocare.models.blood_sugar import BloodSugarRecord
 from chronocare.models.medical_record import MedicalRecord
 from chronocare.models.person import Condition, Person
+from chronocare.models.report_generation import ReportGeneration
 from chronocare.models.visit import Visit
 
 __all__ = [
@@ -12,5 +13,6 @@ __all__ = [
     "Condition",
     "BloodSugarRecord",
     "MedicalRecord",
+    "ReportGeneration",
     "Visit",
 ]

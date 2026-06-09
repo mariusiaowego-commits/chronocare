@@ -12,6 +12,7 @@ from chronocare.routers.api.backup import router as api_backup_router
 from chronocare.routers.api.blood_sugar import router as api_bs_router
 from chronocare.routers.api.medical_record import router as api_medical_record_router
 from chronocare.routers.api.person import router as api_person_router
+from chronocare.routers.api.report import router as api_report_router
 from chronocare.routers.api.visit import router as api_visit_router
 
 # Page routers
@@ -20,6 +21,7 @@ from chronocare.routers.pages.cloud_film import router as pages_cloud_film_route
 from chronocare.routers.pages.dashboard import router as pages_dashboard_router
 from chronocare.routers.pages.medical_record import router as pages_medical_record_router
 from chronocare.routers.pages.person import router as pages_person_router
+from chronocare.routers.pages.report import router as pages_report_router
 from chronocare.routers.pages.visit import router as pages_visit_router
 
 app = FastAPI(title="ChronoCare", description="老年父母健康管理平台", version="0.3.0")
@@ -53,6 +55,7 @@ app.include_router(api_person_router)
 app.include_router(api_bs_router)
 app.include_router(api_visit_router)
 app.include_router(api_medical_record_router)
+app.include_router(api_report_router)
 
 # Register page routers
 app.include_router(pages_dashboard_router)
@@ -61,6 +64,7 @@ app.include_router(pages_bs_router)
 app.include_router(pages_visit_router)
 app.include_router(pages_medical_record_router)
 app.include_router(pages_cloud_film_router)
+app.include_router(pages_report_router)
 
 
 @app.get("/")

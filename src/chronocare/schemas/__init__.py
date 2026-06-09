@@ -17,6 +17,11 @@ from chronocare.schemas.person import (
     PersonRead,
     PersonUpdate,
 )
+from chronocare.schemas.report_generation import (
+    ReportGenerateRequest,
+    ReportGenerationBrief,
+    ReportGenerationRead,
+)
 from chronocare.schemas.visit import VisitCreate, VisitRead, VisitUpdate
 
 __all__ = [
@@ -24,5 +29,6 @@ __all__ = [
     "MedicalRecordCreate", "MedicalRecordRead", "MedicalRecordUpdate",
     "ConditionCreate", "ConditionRead",
     "PersonCreate", "PersonRead", "PersonUpdate",
+    "ReportGenerationBrief", "ReportGenerationRead", "ReportGenerateRequest",
     "VisitCreate", "VisitRead", "VisitUpdate",
 ]

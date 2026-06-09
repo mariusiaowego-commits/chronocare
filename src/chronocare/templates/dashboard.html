@@ -142,7 +142,7 @@ function initBsChart(labels, values, statuses) {
     </div>
 
     <!-- ── Quick Actions ── -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-8">
         <a href="/blood-sugar/new?person_id={{ selected.id }}"
            class="card-animate card-interactive text-center p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-sky-300 dark:hover:border-sky-600 transition shadow-sm">
             <span class="text-3xl"><svg class="inline-block align-middle" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/droplet.svg' ignore missing %}</svg></span>
@@ -163,6 +163,11 @@ function initBsChart(labels, values, statuses) {
             <span class="text-3xl"><svg class="inline-block align-middle" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/clipboard-list.svg' ignore missing %}</svg></span>
             <p class="text-sm font-medium mt-2 text-slate-700 dark:text-slate-200">就诊记录</p>
         </a>
+        <button onclick="openReportModal({{ selected.id }})"
+                class="card-animate card-interactive text-center p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-sky-300 dark:hover:border-sky-600 transition shadow-sm">
+            <span class="text-3xl"><svg class="inline-block align-middle" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/file-text.svg' ignore missing %}</svg></span>
+            <p class="text-sm font-medium mt-2 text-slate-700 dark:text-slate-200">生成报告</p>
+        </button>
     </div>
 
     <!-- ── Two-column content ── -->
@@ -279,4 +284,33 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 {% endif %}
+
+{# Report modal overlay #}
+<div id="report-modal-overlay"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm"
+     onclick="closeReportModal()">
+    <div id="report-modal-content"></div>
+</div>
+
+<script>
+function openReportModal(personId) {
+    const overlay = document.getElementById('report-modal-overlay');
+    overlay.classList.remove('hidden');
+    overlay.classList.add('flex');
+    fetch(`/reports/modal/${personId}`)
+        .then(r => r.text())
+        .then(html => {
+            document.getElementById('report-modal-content').innerHTML = html;
+        });
+}
+function closeReportModal() {
+    const overlay = document.getElementById('report-modal-overlay');
+    overlay.classList.add('hidden');
+    overlay.classList.remove('flex');
+    document.getElementById('report-gen-status')?.classList.add('hidden');
+}
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeReportModal();
+});
+</script>
 {% endblock %}
