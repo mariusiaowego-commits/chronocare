@@ -1,12 +1,15 @@
 """Report generation orchestration service.
 
 Handles: create record → aggregate data → build prompt → generate image → persist.
+Uses Hermes CLI subprocess for image generation.
 """
 
 from __future__ import annotations
 
+import asyncio
 import gzip
 import json
+import os
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -19,6 +22,8 @@ from chronocare.services.report_data import aggregate_person_data
 
 # Report storage directory
 REPORTS_DIR = Path("data/reports")
+# Hermes image generation script
+HERMES_SCRIPT = Path(__file__).resolve().parent.parent.parent.parent / "scripts" / "hermes_image_generate.py"
 
 
 async def create_report_record(
@@ -59,20 +64,14 @@ async def list_person_reports(
 async def generate_report(
     db: AsyncSession,
     report_id: int,
-    image_generate_fn,  # injected: callable(prompt, aspect_ratio) -> url/path
 ) -> ReportGeneration:
     """Execute the full report generation pipeline.
 
     1. Load report record
     2. Aggregate person data
-    3. Build prompt
-    4. Call image_generate
-    5. Save image + update record
-
-    Args:
-        db: async session
-        report_id: the ReportGeneration record ID
-        image_generate_fn: callable(prompt: str, aspect_ratio: str) -> str
+    3. Build prompt (baoyu-infographic style)
+    4. Call Hermes CLI for image generation
+    5. Save result + update record
     """
     report = await get_report(db, report_id)
     if not report:
@@ -91,15 +90,9 @@ async def generate_report(
         # Step 2: Build prompt
         prompt = _build_prompt(data, report.layout)
 
-        # Step 3: Generate image
-        aspect_ratio = "portrait" if report.layout == "pc" else "square"
-        image_result = image_generate_fn(prompt, aspect_ratio=aspect_ratio)
-
-        # image_result can be a URL string or a dict with 'image'/'url' key
-        if isinstance(image_result, dict):
-            image_path = image_result.get("image") or image_result.get("url", "")
-        else:
-            image_path = str(image_result)
+        # Step 3: Generate image via Hermes CLI
+        aspect = "portrait" if report.layout == "pc" else "square"
+        image_url = await _hermes_image_generate(prompt, aspect)
 
         # Step 4: Persist
         elapsed = time.time() - start_time
@@ -107,7 +100,7 @@ async def generate_report(
         data_gzipped = gzip.compress(data_json.encode("utf-8"))
 
         report.status = "completed"
-        report.image_path = image_path
+        report.image_path = image_url
         report.prompt_snapshot = prompt
         report.data_snapshot = data_gzipped
         report.generation_seconds = round(elapsed, 2)
@@ -125,11 +118,67 @@ async def generate_report(
     return report
 
 
-def _build_prompt(data: dict, layout: str) -> str:
-    """Build the image generation prompt based on data and layout.
+async def _hermes_image_generate(prompt: str, aspect: str = "portrait") -> str:
+    """Call Hermes CLI via subprocess to generate an image.
 
-    PC layout: morandi-journal + winding-roadmap style (detailed A4)
-    Mobile layout: simplified, large text, gift-like
+    Returns the image URL or path string.
+    Raises RuntimeError on failure.
+    """
+    if not HERMES_SCRIPT.exists():
+        raise RuntimeError(f"Hermes script not found: {HERMES_SCRIPT}")
+
+    proc = await asyncio.create_subprocess_exec(
+        "python3",
+        str(HERMES_SCRIPT),
+        prompt,
+        "--aspect", aspect,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        env={**os.environ, "PYTHONUNBUFFERED": "1"},
+    )
+    stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=180)
+
+    if proc.returncode != 0:
+        raise RuntimeError(f"Hermes script failed (rc={proc.returncode}): {stderr.decode()[:500]}")
+
+    try:
+        result = json.loads(stdout.decode().strip())
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"Invalid JSON from hermes script: {stdout.decode()[:500]}"
+        ) from exc
+
+    if "error" in result:
+        raise RuntimeError(f"Image generation error: {result['error']}")
+
+    url = result.get("url") or result.get("path") or result.get("image", "")
+    if not url:
+        raise RuntimeError(f"No image URL in result: {result}")
+
+    return url
+
+
+# ---------------------------------------------------------------------------
+# Prompt building (baoyu-infographic morandi-journal + winding-roadmap)
+# ---------------------------------------------------------------------------
+
+# Color palette (locked from baoyu-infographic template)
+_COLORS = """
+COLOR PALETTE (use exactly these hex values):
+- Background: #F5F0E6 (warm cream paper)
+- Header/frame: #7BA3A8 (muted sage teal)
+- Stable status: #8FA876 (soft olive green)
+- Needs action: #D4956A (soft terracotta — NOT red)
+- Highlight: #F5E6C8 (pale yellow callout)
+- Text/lines: #4A4540 (charcoal brown — NOT pure black)
+"""
+
+
+def _build_prompt(data: dict, layout: str) -> str:
+    """Build the image generation prompt.
+
+    PC layout: winding-roadmap + morandi-journal (detailed A4 portrait)
+    Mobile layout: simplified, large text, gift-like (square)
     """
     person = data["person"]
     summary = data["summary"]
@@ -138,24 +187,23 @@ def _build_prompt(data: dict, layout: str) -> str:
     bs = data["blood_sugar"]
     metrics = data["key_metrics"]
 
-    # Person basic info
     name = person["name"]
     gender_str = "男" if person.get("gender") == "M" else "女"
-    birth = person.get("birth_date", "未知")
-    date_range = data["summary"].get("date_range") or ["未知", "未知"]
+    birth = person.get("birth_date") or "未知"
+    dr = summary.get("date_range") or ["未知", "未知"]
 
     # Doctor summary
-    doctor_lines = []
+    doc_lines = []
     for doc_name, detail in doctors.get("details", {}).items():
         diag_str = "、".join(detail.get("diagnoses", [])[:5])
-        doctor_lines.append(f"- {doc_name}: {detail['pdf_count']}次就诊, 主要诊断: {diag_str}")
-    doctor_text = "\n".join(doctor_lines) if doctor_lines else "暂无医生数据"
+        doc_lines.append(f"- {doc_name}: {detail['pdf_count']}次就诊, 主要诊断: {diag_str}")
+    doctor_text = "\n".join(doc_lines) if doc_lines else "暂无医生数据"
 
-    # Diagnosis summary
+    # Diagnosis
     common = diag.get("common_across_doctors", [])
     common_text = "、".join(common) if common else "暂无"
 
-    # Blood sugar summary
+    # Blood sugar
     bs_text = ""
     if bs.get("summary"):
         s = bs["summary"]
@@ -164,57 +212,66 @@ def _build_prompt(data: dict, layout: str) -> str:
     # Key metrics
     inr_text = ""
     if metrics.get("inr_values"):
-        latest_inr = metrics["inr_values"][-1]
-        inr_text = f"\n最新INR: {latest_inr['value']} ({latest_inr['date']})"
+        latest = metrics["inr_values"][-1]
+        inr_text = f"\n最新INR: {latest['value']} ({latest['date']})"
 
     echo_text = ""
     if metrics.get("echo_findings"):
-        echo_items = [f"  - {e['text']}" for e in metrics["echo_findings"][:3]]
-        echo_text = "\n心超关键发现:\n" + "\n".join(echo_items)
+        items = [f"  - {e['text']}" for e in metrics["echo_findings"][:3]]
+        echo_text = "\n心超关键发现:\n" + "\n".join(items)
 
     if layout == "pc":
-        return f"""Generate a health report infographic in morandi-journal + winding-roadmap style.
+        return f"""Generate a health report infographic.
+Style: morandi-journal (hand-drawn doodle, warm Morandi tones).
+Layout: winding-roadmap (S-curve path with milestones).
 
-Subject: {name}, {gender_str}, born {birth}
-Data period: {date_range[0]} ~ {date_range[1]}
-Total visits: {summary['visit_count']} | Medical records: {summary['record_count']}
+{_COLORS}
 
-VISITING DOCTORS:
+SUBJECT: {name}, {gender_str}, born {birth}
+DATA PERIOD: {dr[0]} ~ {dr[1]}
+TOTAL: {summary['visit_count']} visits, {summary['record_count']} medical records
+
+DOCTORS:
 {doctor_text}
 
-CONSISTENT DIAGNOSIS (all doctors agree): {common_text}
+CONSISTENT DIAGNOSIS: {common_text}
 
 DIAGNOSIS BY DOCTOR:
 {chr(10).join(f"- {d}: {', '.join(info.get('diagnoses', [])[:5])}" for d, info in diag.get('by_doctor', {}).items())}
 {bs_text}{inr_text}{echo_text}
 
-Design requirements:
-- Winding roadmap timeline showing the patient's medical journey with 4-6 key stations
-- Bento grid cards for doctor statistics, diagnosis consistency, key metrics
-- Color coding: olive green = stable, terracotta orange = needs treatment
-- Tone: medically accurate + warm (not alarming, not downplaying)
-- Chinese language, medical terms with parenthetical explanations for elderly readers
-- A4 portrait (3:4), print-friendly
+DESIGN REQUIREMENTS:
+1. Winding roadmap with 5-7 milestone stations showing the patient's medical journey
+2. Each milestone: date range + headline + 2-3 plain-language facts + status (稳定/持续管理/需进一步评估)
+3. Bento cards for: doctor stats, diagnosis consistency, key lab values
+4. Comparison table: initial vs current state, color-coded (olive green=stable, terracotta=needs action)
+5. 4 sticky-note action items at the bottom with concrete next steps
+6. CRITICAL: Use plain language with medical terms in parentheses. Example: "心脏的'小门'关得不够紧(二尖瓣关闭不全)"
+7. CRITICAL: No red/orange-red. No emoji. No "不用太担心" or "请遵医嘱"
+8. Chinese language throughout
+9. Aspect: portrait 3:4 (A4 print-friendly)
 """
     else:
-        # Mobile: simplified, large text, fewer data points
-        return f"""Generate a health report card for elderly person, mobile-friendly.
+        # Mobile: simplified, large text, gift-like
+        return f"""Generate a health report card for elderly person. Style: morandi-journal, warm and gift-like.
 
-Subject: {name}, {gender_str}
-Period: {date_range[0]} ~ {date_range[1]}
+{_COLORS}
+
+SUBJECT: {name}, {gender_str}
+PERIOD: {dr[0]} ~ {dr[1]}
 
 KEY FINDINGS:
-- Visits: {summary['visit_count']} times
+- Total visits: {summary['visit_count']} times
 - Main diagnoses: {common_text}
 {bs_text}{inr_text}
 
-Design requirements:
-- Large text (>24px equivalent), high contrast
-- Single column vertical layout, card stacking
-- Only 3-5 key information blocks maximum
-- Color coding: olive green = stable, terracotta orange = needs treatment
-- Warm, gift-like feel suitable for WeChat sharing
-- Square (1:1) format
-- Chinese language, simple wording elderly can understand
-- Include a small family/health icon motif for emotional warmth
+DESIGN REQUIREMENTS:
+1. Large text (>24px equivalent), high contrast, generous whitespace
+2. Single column, 3-5 key information blocks maximum
+3. Color: olive green (#8FA876) = stable, terracotta (#D4956A) = needs action
+4. Include a small family/health icon motif for emotional warmth
+5. Plain language only — elderly reader must understand without medical background
+6. No red, no emoji, no alarming language
+7. Chinese language
+8. Square 1:1 format (WeChat sharing friendly)
 """

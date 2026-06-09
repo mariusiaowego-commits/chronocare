@@ -51,17 +51,9 @@ async def _run_generation(report_id: int):
 
     async with async_session_factory() as db:
         try:
-            await svc.generate_report(db, report_id, _mock_image_generate)
+            await svc.generate_report(db, report_id)
         except Exception:
             pass  # status already updated to 'failed' in generate_report
-
-
-def _mock_image_generate(prompt: str, aspect_ratio: str = "portrait") -> str:
-    """Placeholder image generator — returns a placeholder path.
-
-    Will be replaced with actual image_generate call when integrated.
-    """
-    return f"/static/placeholders/report_{aspect_ratio}.png"
 
 
 @router.get("/reports/{report_id}", response_model=ReportGenerationRead)

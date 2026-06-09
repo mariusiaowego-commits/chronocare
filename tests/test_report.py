@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from httpx import AsyncClient
 
@@ -18,8 +20,9 @@ async def person_id(client: AsyncClient) -> int:
 
 
 @pytest.mark.anyio
+@patch("chronocare.routers.api.report.svc.generate_report", new_callable=AsyncMock)
 async def test_generate_report_creates_pending_record(
-    client: AsyncClient, person_id: int
+    mock_gen: AsyncMock, client: AsyncClient, person_id: int
 ):
     """POST /api/persons/{id}/reports/generate should create a pending record."""
     resp = await client.post(
@@ -35,7 +38,10 @@ async def test_generate_report_creates_pending_record(
 
 
 @pytest.mark.anyio
-async def test_generate_report_mobile_layout(client: AsyncClient, person_id: int):
+@patch("chronocare.routers.api.report.svc.generate_report", new_callable=AsyncMock)
+async def test_generate_report_mobile_layout(
+    mock_gen: AsyncMock, client: AsyncClient, person_id: int
+):
     """Should support mobile layout."""
     resp = await client.post(
         f"/api/persons/{person_id}/reports/generate",
@@ -56,7 +62,8 @@ async def test_generate_report_nonexistent_person(client: AsyncClient):
 
 
 @pytest.mark.anyio
-async def test_get_report_status(client: AsyncClient, person_id: int):
+@patch("chronocare.routers.api.report.svc.generate_report", new_callable=AsyncMock)
+async def test_get_report_status(mock_gen: AsyncMock, client: AsyncClient, person_id: int):
     """GET /api/reports/{id} should return the report record."""
     # Create
     create_resp = await client.post(
@@ -79,7 +86,8 @@ async def test_get_report_not_found(client: AsyncClient):
 
 
 @pytest.mark.anyio
-async def test_list_person_reports(client: AsyncClient, person_id: int):
+@patch("chronocare.routers.api.report.svc.generate_report", new_callable=AsyncMock)
+async def test_list_person_reports(mock_gen: AsyncMock, client: AsyncClient, person_id: int):
     """GET /api/persons/{id}/reports should return report list."""
     # Generate 2 reports
     await client.post(
@@ -110,8 +118,8 @@ async def test_list_reports_empty(client: AsyncClient, person_id: int):
 @pytest.mark.anyio
 async def test_report_data_aggregation(client: AsyncClient, person_id: int):
     """Aggregated data should include person info even with no visits."""
-    from chronocare.services.report_data import aggregate_person_data
     from chronocare.database import async_session_factory
+    from chronocare.services.report_data import aggregate_person_data
 
     async with async_session_factory() as db:
         data = await aggregate_person_data(db, person_id)
