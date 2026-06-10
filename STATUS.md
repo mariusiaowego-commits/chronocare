@@ -126,19 +126,20 @@
 
 ## 2026-06-09 改动摘要
 
-### 健康报告图 Feature (PR #4)
-- `feat/health-report` 分支, 4 commits
+### 健康报告图 Feature (PR #4 ✅ merged)
+- `feat/health-report` → PR #4 → merged to main @ e54df9b
 - T1: ReportGeneration model + data aggregation + API
 - T3: Hermes CLI subprocess image_generate + baoyu prompt
 - T6: 前端 modal + 历史列表 + dashboard 入口
-- 测试: 49/49 通过 (含 8 个新测试)
+- Bug fix: extract_doctor 正则双重转义 (中文匹配失败)
+- 测试: 67/67 通过 (含 26 个新测试)
+- 数据清理: 177 条测试残留已删除
 
 ## Git
-- 当前分支: `main` @ 47bca7e
-- feature branch: `feat/health-report` → PR #4
+- 当前分支: `main` @ e54df9b (PR #4 merged)
 - 工作流: feature branch → commit → PR（不用 worktree）
 - pyproject.toml version: 0.5.0
-- 测试: 49/49 通过
+- 测试: 67/67 通过
 
 ## 开发命令
 ```bash
