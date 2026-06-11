@@ -349,4 +349,5 @@ async def aggregate_person_data(db: AsyncSession, person_id: int) -> dict[str, A
             "inr_values": inr_values,
             "echo_findings": echo_findings,
         },
+        "_visits": visits,  # raw visit data for prompt milestone building
     }
