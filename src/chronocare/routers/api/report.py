@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
+import re
+import shutil
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +19,126 @@ from chronocare.services import report_generation as svc
 
 router = APIRouter(prefix="/api", tags=["reports"])
 
+
+# --- Preflight (must be before /reports/{report_id} to avoid route conflict) ---
+
+@router.get("/reports/preflight")
+async def report_preflight():
+    """Pre-flight check: verify hermes CLI and image generation readiness.
+
+    Checks two layers:
+    1. Tool Gateway: is FAL image generation available via Nous Portal?
+    2. Chat model: can hermes chat actually respond? (lightweight test)
+    """
+    result = {
+        "hermes_available": False,
+        "portal_logged_in": False,
+        "fal_image_gen": False,
+        "chat_model_working": False,
+        "chat_provider": None,
+        "chat_model": None,
+        "tool_gateway": None,
+        "errors": [],
+    }
+
+    # 1. Check hermes binary
+    hermes_bin = shutil.which("hermes")
+    if not hermes_bin:
+        result["errors"].append("hermes CLI not found in PATH")
+        return result
+    result["hermes_available"] = True
+
+    # 2. Check portal tools — is FAL image generation available?
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "hermes", "portal", "tools",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=10)
+        tools_text = stdout.decode()
+
+        # Check FAL image gen
+        for line in tools_text.splitlines():
+            if "Image generation" in line:
+                if "✓" in line and "FAL" in line:
+                    result["fal_image_gen"] = True
+                    result["tool_gateway"] = "FAL via Nous Portal"
+                break
+
+        # Check portal login from tools output
+        if "via Nous Portal" in tools_text:
+            result["portal_logged_in"] = True
+
+    except (TimeoutError, FileNotFoundError) as e:
+        result["errors"].append(f"hermes portal tools check failed: {e}")
+
+    # 3. Verify chat model actually works (lightweight test)
+    #    This catches auth failures (401) before the user tries to generate
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "hermes", "chat", "-q", "Reply with exactly: OK", "-Q",
+            "--max-turns", "1",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30)
+        chat_output = stdout.decode()
+        chat_stderr = stderr.decode()
+
+        # Check for auth errors
+        if "401" in chat_stderr or "authentication" in chat_stderr.lower():
+            # Extract provider/model from error
+            provider_match = re.search(r"Provider:\s+(\S+)", chat_stderr)
+            model_match = re.search(r"Model:\s+(\S+)", chat_stderr)
+            if provider_match:
+                result["chat_provider"] = provider_match.group(1)
+            if model_match:
+                result["chat_model"] = model_match.group(1)
+            result["errors"].append(f"Chat model auth failed: {chat_stderr[:200]}")
+        elif proc.returncode == 0 and "OK" in chat_output:
+            result["chat_model_working"] = True
+            # Try to extract what model was used from stderr
+            # hermes logs the model used in stderr
+            model_match = re.search(r"Model:\s+(\S+)", chat_stderr)
+            provider_match = re.search(r"Provider:\s+(\S+)", chat_stderr)
+            if model_match:
+                result["chat_model"] = model_match.group(1)
+            if provider_match:
+                result["chat_provider"] = provider_match.group(1)
+        else:
+            result["errors"].append(f"Chat test unexpected output: {chat_output[:200]}")
+
+    except TimeoutError:
+        result["errors"].append("Chat model test timed out (30s)")
+    except FileNotFoundError:
+        result["errors"].append("hermes chat command not found")
+
+    # 4. Fallback: get config info if chat test didn't reveal model
+    if not result["chat_provider"]:
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                "hermes", "status",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=10)
+            status_text = stdout.decode()
+
+            model_match = re.search(r"Model:\s+(.+)", status_text)
+            provider_match = re.search(r"Provider:\s+(.+)", status_text)
+            if model_match and not result["chat_model"]:
+                result["chat_model"] = model_match.group(1).strip()
+            if provider_match and not result["chat_provider"]:
+                result["chat_provider"] = provider_match.group(1).strip()
+
+        except (TimeoutError, FileNotFoundError):
+            pass
+
+    return result
+
+
+# --- Generate ---
 
 @router.post(
     "/persons/{person_id}/reports/generate",
@@ -55,6 +179,8 @@ async def _run_generation(report_id: int):
         except Exception:
             pass  # status already updated to 'failed' in generate_report
 
+
+# --- Status & History ---
 
 @router.get("/reports/{report_id}", response_model=ReportGenerationRead)
 async def get_report_status(
