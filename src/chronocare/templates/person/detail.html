@@ -171,25 +171,51 @@ function runPreflight() {
   const statusEl = document.getElementById('preflight-status');
   if (!statusEl) return;
 
-  fetch('/api/reports/preflight')
+  let seconds = 0;
+  const loadingTimer = setInterval(() => {
+    seconds++;
+    const el = statusEl.querySelector('.text-sm');
+    if (el) el.textContent = `正在检查生成环境… (${seconds}s)`;
+  }, 1000);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  fetch('/api/reports/preflight', { signal: controller.signal })
     .then(r => r.json())
     .then(data => {
-      const checks = [];
-      checks.push({ ok: data.hermes_available, label: 'Hermes CLI', detail: data.hermes_available ? '可用' : '未找到' });
-      checks.push({ ok: data.portal_logged_in, label: 'Nous Portal', detail: data.portal_logged_in ? '已登录' : '未登录' });
-      checks.push({ ok: data.fal_image_gen, label: '图片生成 (FAL)', detail: data.tool_gateway || (data.fal_image_gen ? '可用' : '不可用') });
-      if (data.chat_model_working) {
-        checks.push({ ok: true, label: 'Chat 模型', detail: (data.chat_provider || '?') + ' / ' + (data.chat_model || '?') + ' ✓ 验证通过' });
-      } else {
-        checks.push({ ok: false, label: 'Chat 模型', detail: (data.chat_provider || '未知') + ' / ' + (data.chat_model || '未知') + ' — 连接失败' });
-      }
-      if (data.errors) data.errors.forEach(e => checks.push({ ok: false, label: '错误', detail: e }));
-      const allOk = checks.every(c => c.ok);
-      statusEl.innerHTML = checks.map(c => `<div class="flex items-center gap-2 text-xs py-0.5 ${c.ok ? 'text-slate-600 dark:text-slate-300' : 'text-red-500'}"><span>${c.ok ? '✓' : '✗'}</span><span class="font-medium">${c.label}</span><span class="text-slate-400">${c.detail}</span></div>`).join('');
-      if (allOk) { document.getElementById('btn-pc').disabled = false; document.getElementById('btn-mobile').disabled = false; }
-      else { statusEl.innerHTML += '<div class="mt-2 text-xs text-amber-600 dark:text-amber-400">⚠ 环境未就绪，请先修复上述问题</div>'; }
+      clearInterval(loadingTimer);
+      clearTimeout(timeoutId);
+      renderPreflightResult(statusEl, data);
     })
-    .catch(err => { statusEl.innerHTML = `<div class="text-xs text-red-500">✗ 预检请求失败: ${err.message}</div>`; });
+    .catch(err => {
+      clearInterval(loadingTimer);
+      clearTimeout(timeoutId);
+      statusEl.innerHTML = `<div class="text-xs text-amber-600 dark:text-amber-400">⚠ 预检${err.name === 'AbortError' ? '超时 (15s)' : '失败'}: ${err.message || '未知错误'}<div class="mt-2 flex gap-2"><button onclick="runPreflight()" class="px-2 py-1 text-xs bg-sky-500 text-white rounded hover:bg-sky-600">重试</button><button onclick="skipPreflight()" class="px-2 py-1 text-xs bg-slate-400 text-white rounded hover:bg-slate-500">跳过检查</button></div></div>`;
+    });
+}
+
+function renderPreflightResult(statusEl, data) {
+  const checks = [];
+  checks.push({ ok: data.hermes_available, label: 'Hermes CLI', detail: data.hermes_available ? '可用' : '未找到' });
+  checks.push({ ok: data.portal_logged_in, label: 'Nous Portal', detail: data.portal_logged_in ? '已登录' : '未登录' });
+  checks.push({ ok: data.fal_image_gen, label: '图片生成 (FAL)', detail: data.tool_gateway || (data.fal_image_gen ? '可用' : '不可用') });
+  if (data.chat_model_working) {
+    checks.push({ ok: true, label: 'Chat 模型', detail: (data.chat_provider || '?') + ' / ' + (data.chat_model || '?') + ' ✓ 验证通过' });
+  } else {
+    checks.push({ ok: false, label: 'Chat 模型', detail: (data.chat_provider || '未知') + ' / ' + (data.chat_model || '未知') + ' — 连接失败' });
+  }
+  if (data.errors) data.errors.forEach(e => checks.push({ ok: false, label: '错误', detail: e }));
+  const allOk = checks.every(c => c.ok);
+  statusEl.innerHTML = checks.map(c => `<div class="flex items-center gap-2 text-xs py-0.5 ${c.ok ? 'text-slate-600 dark:text-slate-300' : 'text-red-500'}"><span>${c.ok ? '✓' : '✗'}</span><span class="font-medium">${c.label}</span><span class="text-slate-400">${c.detail}</span></div>`).join('');
+  if (allOk) { document.getElementById('btn-pc').disabled = false; document.getElementById('btn-mobile').disabled = false; }
+  else { statusEl.innerHTML += '<div class="mt-2 flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400"><span>⚠ 环境未就绪</span><button onclick="runPreflight()" class="px-2 py-1 bg-sky-500 text-white rounded hover:bg-sky-600">重试</button><button onclick="skipPreflight()" class="px-2 py-1 bg-slate-400 text-white rounded hover:bg-slate-500">跳过</button></div>'; }
+}
+
+function skipPreflight() {
+  document.getElementById('btn-pc').disabled = false;
+  document.getElementById('btn-mobile').disabled = false;
+  document.getElementById('preflight-status').innerHTML = '<div class="text-xs text-slate-400">已跳过环境检查 — 生成可能失败</div>';
 }
 
 // --- Generate report ---
