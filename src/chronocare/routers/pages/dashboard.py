@@ -112,8 +112,8 @@ async def dashboard(
     if selected:
         from chronocare.services import report_generation as report_svc
         recent_reports = await report_svc.list_person_reports(db, selected.id, limit=5)
-        # Only show completed reports with images
-        recent_reports = [r for r in recent_reports if r.status == 'completed' and r.image_path]
+        # Show completed reports with images OR failed reports with error messages
+        recent_reports = [r for r in recent_reports if (r.status == 'completed' and r.image_path) or r.status == 'failed']
 
     return templates.TemplateResponse(request, "dashboard.html", {
         "request": request,

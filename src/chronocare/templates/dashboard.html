@@ -179,6 +179,7 @@ function initBsChart(labels, values, statuses) {
         </div>
         <div class="flex gap-3 overflow-x-auto pb-2">
             {% for r in recent_reports %}
+            {% if r.status == 'completed' and r.image_path %}
             <div class="flex-shrink-0 w-40 cursor-pointer group" onclick="viewReportFullscreen('{{ r.image_path }}')">
                 <div class="relative w-40 h-56 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 group-hover:border-sky-400 transition">
                     <img src="{{ r.image_path }}" alt="健康报告" class="w-full h-full object-cover" loading="lazy" />
@@ -189,6 +190,19 @@ function initBsChart(labels, values, statuses) {
                     <span class="text-xs text-slate-400">{{ r.created_at.strftime('%m-%d') }}</span>
                 </div>
             </div>
+            {% elif r.status == 'failed' %}
+            <div class="flex-shrink-0 w-40">
+                <div class="relative w-40 h-56 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 flex flex-col items-center justify-center p-3">
+                    <svg class="w-8 h-8 text-red-400 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    <p class="text-xs text-red-500 text-center leading-tight">生成失败</p>
+                    <p class="text-[10px] text-red-400 text-center mt-1 leading-tight break-all">{{ r.error_message[:60] if r.error_message else '未知错误' }}</p>
+                </div>
+                <div class="mt-1.5 flex items-center justify-between">
+                    <span class="text-xs text-slate-500">{{ 'PC' if r.layout == 'pc' else 'Mobile' }}</span>
+                    <span class="text-xs text-red-400">{{ r.created_at.strftime('%m-%d') }}</span>
+                </div>
+            </div>
+            {% endif %}
             {% endfor %}
         </div>
     </div>
