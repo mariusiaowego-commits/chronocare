@@ -1,77 +1,75 @@
 # 260611-handoff.md
 
 > 生成时间: 2026-06-11
-> 当前版本: v0.5.0 → v0.6.0 (test isolation)
-> 分支: main (commit 4334325, PR #5 merged)
+> 当前版本: v0.7.0
+> 分支: main @ a9a2249 (PR #6 merged)
 
 ## 本次 Session 变更摘要
 
-### 1. 测试隔离 (v0.6.0 核心改动)
+### 健康报告生成体验全面升级 (PR #6)
 
-**问题**: pytest 直接 import 生产 app，没有 DB override，每次 `uv run pytest` 向生产 `data/chronocare.db` 写入测试数据。
+**PR**: https://github.com/mariusiaowego-commits/chronocare/pull/6
+**分支**: feat/report-experience-upgrade → main
+**改动**: 20 files changed, +1344 -176
 
-**实证**:
-- 123 条污染 person (name='测试报告人物'/'深度验证人物'/'测试人员')
-- 80 条污染 medical_records (全部 person_id 关联到污染 person)
-- 今早 (2026-06-10) Alma agent 跑了一次 pytest，污染 +8 条
+#### 1. Preflight 环境检查
+- 新增 `GET /api/reports/preflight` 端点
+- 真实验证 hermes CLI / Nous Portal / FAL image gen / chat 模型
+- 前端 modal 加载时自动 preflight，15s 超时 + 重试/跳过按钮
 
-**根因**: `tests/conftest.py` 直接 `from chronocare.main import app`，app 内部的 engine 指向生产 DB。
+#### 2. 超时重试机制
+- `_hermes_image_generate` 超时自动重试 2 次
+- hermes chat timeout: 120s → 300s
+- subprocess timeout: 180s → 360s
 
-**方案**: session-scoped monkeypatch:
-- 从生产 DB 用 SQLite `.backup()` 拷贝到 tmp 目录
-- monkeypatch `chronocare.database.engine` + `async_session_factory` 指向 tmp
-- 生产 `database.py` 零改动，uvicorn :8000 不受影响
-- pytest 结束后 tmp 自动清理
+#### 3. 报告图片本地保存
+- 生成完成后自动下载 FAL CDN 图片到 `data/reports/`
+- 优先使用本地路径，fallback 到 CDN URL
 
-**验证**: 67/67 tests pass + 测试后生产 DB 零污染。
+#### 4. Dashboard 报告画廊
+- 快捷操作下方显示报告缩略图画廊
+- 点击缩略图弹出全屏预览 + 打开原图按钮
+- 失败报告显示红色卡片 + 错误信息
 
-### 2. 生产 DB 清理
+#### 5. 报告 Prompt 重写 (v3 详细结构)
+- PC 版: 6 站点路线图 + 4 bento 卡片 + 对比表 + 行动便签
+- Mobile 版: 医生分析详情 + 术语简注 + 色块区分
+- 语气指南: 准确+温和，不吓人不淡化
+- 语言翻译表: 17 组老人友好表达
 
-- `scripts/cleanup_test_pollution.py` 一次性清理脚本
-- 已执行: 删除 123 person + 80 medical_records
-- 备份: `data/backups/chronocare-pre-cleanup-20260611-085928.db`
-- 清理后: 2 个真实 person (qian, tjh) + 66 条真实 medical_records
+#### 6. 诊断归一化增强
+- `normalize_diag` 增加: 二尖瓣关闭不全/心房颤动/高血压
+- 处理括号变体: (慢性)/(瓣)
+- 共识诊断为空时不显示"暂无"
 
-### 3. Alma agent 调研 (2026-06-10, default profile)
-
-- commit bc886ce: `prd/env-isolation-prd-v1.md` (631行) + `research/env-isolation-investigation-2026-06-10.md` (209行)
-- 作者: yoyoba@alma.com (Alma agent, default profile session)
-- 内容: 完整的根因分析 + 实施 PRD
-- 未动业务代码，纯文档
-
-### 4. 测试修复
-
-- `test_list_person_reports`: 从绝对计数断言改为相对断言（DB copy 可能包含已有数据）
-
-## Git 工作流
-
-- 分支: `feat/test-isolation` → PR → main
-- commit 3989999: 4 files changed, +220 -4
-- PR 待创建（安全策略拦截，需手动）
+#### 7. 收尾文档
+- DEV_PLAN 更新至 v0.7.0
+- vibe-coding-log 补完
+- version bump 0.6.0
+- Alma 调研产物归档
 
 ## 关键文件
 
 | 文件 | 说明 |
 |------|------|
-| `tests/conftest.py` | 核心：session-scoped `_isolated_engine` fixture |
-| `tests/test_report.py` | 修复绝对计数断言 |
-| `scripts/cleanup_test_pollution.py` | 一次性清理脚本（已执行） |
-| `.gitignore` | 新增 data/test/ + .web-9001.pid |
-| `prd/env-isolation-prd-v1.md` | Alma 调研 PRD |
-| `research/env-isolation-investigation-2026-06-10.md` | Alma 调研报告 |
+| `src/chronocare/routers/api/report.py` | preflight 端点 + 重试逻辑 |
+| `src/chronocare/services/report_generation.py` | prompt 重写 + 超时调整 + 图片下载 |
+| `src/chronocare/services/report_data.py` | 诊断归一化增强 |
+| `src/chronocare/templates/dashboard.html` | 报告画廊 + preflight JS |
+| `src/chronocare/templates/report/modal.html` | 失败原因展示 |
+| `scripts/hermes_image_generate.py` | 超时 120s → 300s |
 
 ## 待处理事项
 
-- [x] PR #5 合并到 main (2026-06-11, commit 4334325)
-- [x] main 上 pytest 确认无回归 (67/67 pass, 零污染)
-- [x] feat/test-isolation 分支已删除 (local + remote)
-- [x] PR 合并后在 main 上跑一次 pytest 确认无回归
-- [ ] `scripts/cleanup_test_pollution.py` 可标记为已执行（后续不再需要）
-- [ ] 后续所有测试都应使用 conftest.py 的隔离 engine，不要再直接 import 生产 app
+- [ ] 健康报告 T2: 真实数据 research → 设计报告模板
+- [ ] 健康报告: 前端 report detail 页面优化 (当前是 modal)
+- [ ] 多页化验单支持: PDF 转图片后连续识别和合并
+- [ ] iPad 实机测试 + 响应式微调
+- [ ] 本地打包 (.app)
 
 ## 技术决策
 
-1. **monkeypatch vs env-override**: 选 monkeypatch — database.py 不改动，diff 更小
-2. **session-scoped vs function-scoped**: 选 session — 一个 pytest run 只 swap 一次
-3. **SQLite .backup() vs shutil.copy**: 选 .backup — SQLite 原生备份，一致性更好
-4. **tmp DB vs test DB 文件**: 选 tmp — pytest 原生 tmp_path_factory，自动清理
+1. **Preflight 真实验证**: `hermes status` 显示的 model 不是 image gen 实际用的模型 — 需要真实调用 `hermes chat` 验证
+2. **GPT-4o 能处理复杂信息图**: 问题在 prompt 结构而非模型能力 — 移除 "3-5 blocks maximum" 限制
+3. **HTMX innerHTML 不执行 script**: JS 必须放在页面级，modal 加载后调 `requestAnimationFrame(() => fn())`
+4. **诊断归一化**: "二尖(瓣)关闭不全" vs "二尖瓣关闭不全" 会导致共识诊断为空 — 需要 normalize
