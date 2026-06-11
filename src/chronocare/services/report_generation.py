@@ -94,13 +94,16 @@ async def generate_report(
         aspect = "portrait" if report.layout == "pc" else "square"
         image_url = await _hermes_image_generate(prompt, aspect)
 
-        # Step 4: Persist
+        # Step 4: Download and save image locally
+        local_path = await _download_image(image_url, report.id, report.layout)
+
+        # Step 5: Persist
         elapsed = time.time() - start_time
         data_json = json.dumps(data, ensure_ascii=False, default=str)
         data_gzipped = gzip.compress(data_json.encode("utf-8"))
 
         report.status = "completed"
-        report.image_path = image_url
+        report.image_path = local_path or image_url  # prefer local, fallback to CDN
         report.prompt_snapshot = prompt
         report.data_snapshot = data_gzipped
         report.generation_seconds = round(elapsed, 2)
@@ -173,6 +176,29 @@ async def _hermes_image_generate(prompt: str, aspect: str = "portrait", max_retr
             raise RuntimeError(f"Image generation timed out after {max_retries + 1} attempts: {last_error}") from e
 
     raise RuntimeError(f"Image generation failed after {max_retries + 1} attempts: {last_error}")
+
+
+async def _download_image(url: str, report_id: int, layout: str) -> str | None:
+    """Download image from URL and save locally.
+
+    Returns local path (relative to data/reports/) or None on failure.
+    """
+    import aiohttp
+
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"report_{report_id}_{layout}.png"
+    local_path = REPORTS_DIR / filename
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as resp:
+                if resp.status == 200:
+                    content = await resp.read()
+                    local_path.write_bytes(content)
+                    return f"data/reports/{filename}"
+    except Exception:
+        pass  # fallback to CDN URL
+    return None
 
 
 # ---------------------------------------------------------------------------

@@ -397,6 +397,19 @@ function skipPreflight() {
     </div>`;
 }
 
+function viewReport(imageUrl) {
+  const statusEl = document.getElementById('report-gen-status');
+  statusEl.classList.remove('hidden');
+  statusEl.innerHTML = `
+    <div class="mt-2">
+      <img src="${imageUrl}" alt="健康报告" class="w-full max-h-80 object-contain rounded-lg border border-slate-200 dark:border-slate-600" />
+      <div class="mt-2 flex gap-2">
+        <a href="${imageUrl}" target="_blank" class="px-3 py-1.5 text-xs bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition">打开原图</a>
+        <button onclick="document.getElementById('report-gen-status').classList.add('hidden')" class="px-3 py-1.5 text-xs bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 transition">关闭预览</button>
+      </div>
+    </div>`;
+}
+
 // --- Generate report ---
 function generateReport(personId, layout) {
   const statusEl = document.getElementById('report-gen-status');
@@ -463,10 +476,23 @@ function pollReportStatus(reportId, statusEl, personId, layout) {
       .then(data => {
         if (data.status === 'completed') {
           clearInterval(interval);
+          const imgUrl = data.image_path;
           statusEl.innerHTML = `
             <div class="text-sm text-emerald-600 dark:text-emerald-400 py-2">
               ✓ 生成完成 (${data.generation_seconds}s)
-            </div>`;
+            </div>
+            ${imgUrl ? `
+            <div class="mt-2">
+              <img src="${imgUrl}" alt="健康报告" class="w-full max-h-64 object-contain rounded-lg border border-slate-200 dark:border-slate-600" />
+              <div class="mt-2 flex gap-2">
+                <a href="${imgUrl}" target="_blank" class="px-3 py-1.5 text-xs bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition">
+                  打开原图
+                </a>
+                <button onclick="location.reload()" class="px-3 py-1.5 text-xs bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 transition">
+                  关闭
+                </button>
+              </div>
+            </div>` : ''}`;
           document.getElementById('btn-pc').disabled = false;
           document.getElementById('btn-mobile').disabled = false;
         } else if (data.status === 'failed') {
