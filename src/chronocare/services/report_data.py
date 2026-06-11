@@ -33,10 +33,24 @@ def parse_diagnosis(diag_str: str | None) -> list[str]:
 
 
 def normalize_diag(s: str) -> str:
-    """Normalize diagnosis variants (e.g. 失眠/睡眠 → 失眠)."""
+    """Normalize diagnosis variants to canonical form."""
     s = s.strip()
+    # Remove parentheses variants
+    s = s.replace("(慢性)", "").replace("（慢性）", "")
+    s = s.replace("(瓣)", "瓣").replace("（瓣）", "瓣")
+    # Normalize insomnia variants
     if "失眠" in s or "睡眠" in s:
         return "失眠"
+    # Normalize mitral valve variants
+    if "二尖瓣" in s or "二尖" in s:
+        if "关闭不全" in s or "反流" in s:
+            return "二尖瓣关闭不全"
+    # Normalize atrial fibrillation
+    if "心房颤动" in s or "房颤" in s:
+        return "心房颤动"
+    # Normalize hypertension
+    if "高血压" in s:
+        return "高血压"
     return s
 
 

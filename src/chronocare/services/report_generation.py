@@ -515,7 +515,7 @@ CRITICAL TONE TARGET: Calm, professional, medically accurate. Like a kind family
 {no_doc_note}
 
 ### 诊断概要(简明列表)
-- 共识诊断: {common_text}
+{f"- 共识诊断: {common_text}" if common and common_text != "暂无" else ""}
 - 稳定 vs 需关注: 用色块区分, olive green=稳定, terracotta=需关注
 
 ### 关键指标
