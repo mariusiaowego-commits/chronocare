@@ -19,15 +19,29 @@
     </button>
   </div>
 
+  {# Preflight status #}
+  <div id="preflight-status" class="px-6 py-3 bg-slate-50 dark:bg-slate-700/30 border-b border-slate-200 dark:border-slate-700">
+    <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+      <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25"/>
+        <path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      正在检查生成环境…
+    </div>
+  </div>
+
   {# Layout selection #}
   <div class="px-6 py-5">
     <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">选择报告版本：</p>
 
-    <div class="grid grid-cols-2 gap-3 mb-5">
+    <div class="grid grid-cols-2 gap-3 mb-5" id="layout-buttons">
       {# PC version #}
       <button onclick="generateReport({{ person.id }}, 'pc')"
+              id="btn-pc"
+              disabled
               class="group relative p-4 rounded-xl border-2 border-slate-200 dark:border-slate-600
-                     hover:border-sky-400 dark:hover:border-sky-500 transition text-left">
+                     hover:border-sky-400 dark:hover:border-sky-500 transition text-left
+                     disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-slate-200">
         <div class="flex items-center gap-2 mb-2">
           {{ icon('layout-dashboard', 18, 'text-sky-600') }}
           <span class="font-medium text-slate-800 dark:text-slate-100">PC 版</span>
@@ -39,8 +53,11 @@
 
       {# Mobile version #}
       <button onclick="generateReport({{ person.id }}, 'mobile')"
+              id="btn-mobile"
+              disabled
               class="group relative p-4 rounded-xl border-2 border-slate-200 dark:border-slate-600
-                     hover:border-sky-400 dark:hover:border-sky-500 transition text-left">
+                     hover:border-sky-400 dark:hover:border-sky-500 transition text-left
+                     disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-slate-200">
         <div class="flex items-center gap-2 mb-2">
           {{ icon('droplet', 18, 'text-teal-600') }}
           <span class="font-medium text-slate-800 dark:text-slate-100">Mobile 版</span>
@@ -91,6 +108,79 @@
 </div>
 
 <script>
+// --- Preflight check ---
+(function() {
+  const statusEl = document.getElementById('preflight-status');
+
+  fetch('/api/reports/preflight')
+    .then(r => r.json())
+    .then(data => {
+      const checks = [];
+
+      // hermes CLI
+      if (data.hermes_available) {
+        checks.push({ ok: true, label: 'Hermes CLI', detail: '可用' });
+      } else {
+        checks.push({ ok: false, label: 'Hermes CLI', detail: '未找到' });
+      }
+
+      // Portal login
+      if (data.portal_logged_in) {
+        checks.push({ ok: true, label: 'Nous Portal', detail: '已登录' });
+      } else {
+        checks.push({ ok: false, label: 'Nous Portal', detail: '未登录' });
+      }
+
+      // Image generation
+      if (data.image_gen_available) {
+        checks.push({ ok: true, label: '图片生成', detail: 'Nous 订阅可用' });
+      } else {
+        checks.push({ ok: false, label: '图片生成', detail: '不可用' });
+      }
+
+      // Provider / Model
+      if (data.provider && data.model) {
+        checks.push({ ok: true, label: '推理模型', detail: data.provider + ' / ' + data.model });
+      }
+
+      // Errors
+      if (data.errors && data.errors.length > 0) {
+        data.errors.forEach(e => {
+          checks.push({ ok: false, label: '错误', detail: e });
+        });
+      }
+
+      const allOk = checks.every(c => c.ok);
+
+      // Render
+      statusEl.innerHTML = checks.map(c => `
+        <div class="flex items-center gap-2 text-xs py-0.5 ${c.ok ? 'text-slate-600 dark:text-slate-300' : 'text-red-500'}">
+          <span>${c.ok ? '✓' : '✗'}</span>
+          <span class="font-medium">${c.label}</span>
+          <span class="text-slate-400">${c.detail}</span>
+        </div>
+      `).join('');
+
+      // Enable/disable buttons
+      if (allOk) {
+        document.getElementById('btn-pc').disabled = false;
+        document.getElementById('btn-mobile').disabled = false;
+      } else {
+        statusEl.innerHTML += `
+          <div class="mt-2 text-xs text-amber-600 dark:text-amber-400">
+            ⚠ 环境未就绪，请先修复上述问题
+          </div>`;
+      }
+    })
+    .catch(err => {
+      statusEl.innerHTML = `
+        <div class="text-xs text-red-500">
+          ✗ 预检请求失败: ${err.message}
+        </div>`;
+    });
+})();
+
+// --- Generate report ---
 function generateReport(personId, layout) {
   const statusEl = document.getElementById('report-gen-status');
   statusEl.classList.remove('hidden');
@@ -103,6 +193,10 @@ function generateReport(personId, layout) {
       正在生成${layout === 'pc' ? 'PC' : 'Mobile'}版报告…
     </div>`;
 
+  // Disable buttons during generation
+  document.getElementById('btn-pc').disabled = true;
+  document.getElementById('btn-mobile').disabled = true;
+
   fetch(`/api/persons/${personId}/reports/generate`, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -110,21 +204,36 @@ function generateReport(personId, layout) {
   })
   .then(r => r.json())
   .then(data => {
+    if (data.detail) {
+      // Error from API
+      statusEl.innerHTML = `<p class="text-sm text-red-500">请求失败: ${data.detail}</p>`;
+      document.getElementById('btn-pc').disabled = false;
+      document.getElementById('btn-mobile').disabled = false;
+      return;
+    }
     pollReportStatus(data.id, statusEl);
   })
   .catch(err => {
     statusEl.innerHTML = `<p class="text-sm text-red-500">请求失败: ${err.message}</p>`;
+    document.getElementById('btn-pc').disabled = false;
+    document.getElementById('btn-mobile').disabled = false;
   });
 }
 
 function pollReportStatus(reportId, statusEl) {
   let attempts = 0;
-  const maxAttempts = 30;
+  const maxAttempts = 60; // 60 × 3s = 180s (match backend timeout)
   const interval = setInterval(() => {
     attempts++;
     if (attempts > maxAttempts) {
       clearInterval(interval);
-      statusEl.innerHTML = `<p class="text-sm text-amber-500">生成超时，请稍后在报告历史中查看</p>`;
+      statusEl.innerHTML = `
+        <div class="text-sm text-amber-500 py-2">
+          ⏱ 生成超时，请稍后在报告历史中查看
+          <button onclick="location.reload()" class="ml-2 text-sky-500 underline">刷新</button>
+        </div>`;
+      document.getElementById('btn-pc').disabled = false;
+      document.getElementById('btn-mobile').disabled = false;
       return;
     }
 
@@ -139,13 +248,21 @@ function pollReportStatus(reportId, statusEl) {
             </div>`;
           // Refresh history
           htmx.ajax('GET', '/reports/history/${data.person_id}', {target: '#report-history-area'});
+          document.getElementById('btn-pc').disabled = false;
+          document.getElementById('btn-mobile').disabled = false;
         } else if (data.status === 'failed') {
           clearInterval(interval);
-          statusEl.innerHTML = `<p class="text-sm text-red-500">生成失败: ${data.error_message || '未知错误'}</p>`;
+          statusEl.innerHTML = `
+            <div class="text-sm text-red-500 py-2">
+              ✗ 生成失败: ${data.error_message || '未知错误'}
+              <button onclick="location.reload()" class="ml-2 text-sky-500 underline">重试</button>
+            </div>`;
+          document.getElementById('btn-pc').disabled = false;
+          document.getElementById('btn-mobile').disabled = false;
         }
         // else still generating, keep polling
       })
       .catch(() => {}); // ignore transient errors
-  }, 2000);
+  }, 3000);
 }
 </script>
