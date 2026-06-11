@@ -12,7 +12,6 @@ import json
 import os
 import re
 import subprocess
-import sys
 
 
 def generate_image(prompt: str, aspect: str = "portrait") -> dict:
@@ -77,7 +76,7 @@ def generate_image(prompt: str, aspect: str = "portrait") -> dict:
     if path_match:
         return {"path": path_match.group(1)}
 
-    return {"error": f"Could not parse image URL from hermes output", "raw_output": stdout[:1000]}
+    return {"error": "Could not parse image URL from hermes output", "raw_output": stdout[:1000]}
 
 
 def main():

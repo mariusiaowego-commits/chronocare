@@ -1,5 +1,6 @@
 """Cloud film image viewer API and pages."""
 from pathlib import Path
+
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -27,7 +28,7 @@ async def list_cloud_films(request: Request):
                 import json
                 try:
                     manifest = json.loads(manifest_path.read_text())
-                except:
+                except (json.JSONDecodeError, OSError):
                     pass
             
             # Count total images across all series dirs
@@ -47,7 +48,11 @@ async def list_cloud_films(request: Request):
             
             films.append({
                 "id": study_dir.name,
-                "name": manifest.get("patient", study_dir.name.replace("_", " ").title()) if manifest else study_dir.name.replace("_", " ").title(),
+                "name": (
+                    manifest.get("patient", study_dir.name.replace("_", " ").title())
+                    if manifest
+                    else study_dir.name.replace("_", " ").title()
+                ),
                 "study_date": manifest.get("study_date", "") if manifest else "",
                 "patient_id": manifest.get("patient_id", "") if manifest else "",
                 "total_images": total_images,
@@ -73,7 +78,7 @@ async def view_cloud_film(request: Request, study_id: str):
     if manifest_path.exists():
         try:
             manifest = json.loads(manifest_path.read_text())
-        except:
+        except (json.JSONDecodeError, OSError):
             pass
     
     # Organize images by series

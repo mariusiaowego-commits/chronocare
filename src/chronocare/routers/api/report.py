@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import re
 import shutil
 
@@ -71,7 +70,7 @@ async def report_preflight():
         if "via Nous Portal" in tools_text:
             result["portal_logged_in"] = True
 
-    except (asyncio.TimeoutError, FileNotFoundError) as e:
+    except (TimeoutError, FileNotFoundError) as e:
         result["errors"].append(f"hermes portal tools check failed: {e}")
 
     # 3. Verify chat model actually works (lightweight test)
@@ -110,7 +109,7 @@ async def report_preflight():
         else:
             result["errors"].append(f"Chat test unexpected output: {chat_output[:200]}")
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         result["errors"].append("Chat model test timed out (30s)")
     except FileNotFoundError:
         result["errors"].append("hermes chat command not found")
@@ -133,7 +132,7 @@ async def report_preflight():
             if provider_match and not result["chat_provider"]:
                 result["chat_provider"] = provider_match.group(1).strip()
 
-        except (asyncio.TimeoutError, FileNotFoundError):
+        except (TimeoutError, FileNotFoundError):
             pass
 
     return result

@@ -166,7 +166,7 @@ async def _hermes_image_generate(prompt: str, aspect: str = "portrait", max_retr
 
             return url
 
-        except asyncio.TimeoutError as e:
+        except TimeoutError as e:
             last_error = f"Subprocess timeout (180s), attempt {attempt + 1}/{max_retries + 1}"
             if attempt < max_retries:
                 continue  # retry
