@@ -497,7 +497,7 @@ CRITICAL TONE TARGET: Calm, professional, medically accurate. Like a kind family
 {_COLORS}
 {_TONE_GUIDE}
 
-## Content — LARGE TEXT, 3-5 blocks maximum
+## Content — LARGE TEXT, clear sections
 
 ### 标题区
 - 主标题: "{name}的健康报告" (大字,手写风,柔和青绿色)
@@ -510,9 +510,13 @@ CRITICAL TONE TARGET: Calm, professional, medically accurate. Like a kind family
 {doctor_count_text}
 {bs_text}
 
+### 就诊医生(条形图或列表,显示每位医生)
+{doctor_bar_text}
+{no_doc_note}
+
 ### 诊断概要(简明列表)
 - 共识诊断: {common_text}
-- 用色区分: olive green=稳定, terracotta=需关注
+- 稳定 vs 需关注: 用色块区分, olive green=稳定, terracotta=需关注
 
 ### 关键指标
 {inr_text if inr_text else "- 暂无特殊指标"}
@@ -523,9 +527,14 @@ CRITICAL TONE TARGET: Calm, professional, medically accurate. Like a kind family
 - 每条一行,大字清晰
 - 语气温和但准确
 
+### 底部小字(术语简注)
+- 房颤 = 心跳不太规律,需长期抗凝预防中风
+- 二尖瓣 = 心脏4个"小门"之一,关不紧血会倒漏
+- INR = 血的稀稠度,华法林疗效监测指标
+
 DESIGN REQUIREMENTS:
 1. Large text (main text > 24px equivalent), high contrast, generous whitespace
-2. Single column, 3-5 key information blocks maximum
+2. Single column, clear visual sections
 3. Color: olive green (#8FA876) = stable, terracotta (#D4956A) = needs action
 4. Include small hand-drawn health icons for warmth
 5. Plain language — elderly reader must understand without medical background
