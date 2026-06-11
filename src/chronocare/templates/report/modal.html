@@ -118,25 +118,25 @@
       const checks = [];
 
       // hermes CLI
-      if (data.hermes_available) {
-        checks.push({ ok: true, label: 'Hermes CLI', detail: '可用' });
-      } else {
-        checks.push({ ok: false, label: 'Hermes CLI', detail: '未找到' });
-      }
+      checks.push({
+        ok: data.hermes_available,
+        label: 'Hermes CLI',
+        detail: data.hermes_available ? '可用' : '未找到'
+      });
 
       // Portal login
-      if (data.portal_logged_in) {
-        checks.push({ ok: true, label: 'Nous Portal', detail: '已登录' });
-      } else {
-        checks.push({ ok: false, label: 'Nous Portal', detail: '未登录' });
-      }
+      checks.push({
+        ok: data.portal_logged_in,
+        label: 'Nous Portal',
+        detail: data.portal_logged_in ? '已登录' : '未登录'
+      });
 
       // Image generation
-      if (data.image_gen_available) {
-        checks.push({ ok: true, label: '图片生成', detail: 'Nous 订阅可用' });
-      } else {
-        checks.push({ ok: false, label: '图片生成', detail: '不可用' });
-      }
+      checks.push({
+        ok: data.image_gen_available,
+        label: '图片生成',
+        detail: data.image_gen_available ? 'Nous 订阅可用' : '不可用'
+      });
 
       // Provider / Model
       if (data.provider && data.model) {
@@ -183,6 +183,9 @@
 // --- Generate report ---
 function generateReport(personId, layout) {
   const statusEl = document.getElementById('report-gen-status');
+  const btnPc = document.getElementById('btn-pc');
+  const btnMobile = document.getElementById('btn-mobile');
+
   statusEl.classList.remove('hidden');
   statusEl.innerHTML = `
     <div class="flex items-center gap-2 text-sm text-sky-600 dark:text-sky-400 py-2">
@@ -190,12 +193,13 @@ function generateReport(personId, layout) {
         <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25"/>
         <path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
       </svg>
-      正在生成${layout === 'pc' ? 'PC' : 'Mobile'}版报告…
+      正在生成${layout === 'pc' ? 'PC' : 'Mobile'}版报告…<br>
+      <span class="text-xs text-slate-400">调用 Hermes CLI → image_generate，预计 30~120 秒</span>
     </div>`;
 
   // Disable buttons during generation
-  document.getElementById('btn-pc').disabled = true;
-  document.getElementById('btn-mobile').disabled = true;
+  btnPc.disabled = true;
+  btnMobile.disabled = true;
 
   fetch(`/api/persons/${personId}/reports/generate`, {
     method: 'POST',
@@ -205,32 +209,33 @@ function generateReport(personId, layout) {
   .then(r => r.json())
   .then(data => {
     if (data.detail) {
-      // Error from API
       statusEl.innerHTML = `<p class="text-sm text-red-500">请求失败: ${data.detail}</p>`;
-      document.getElementById('btn-pc').disabled = false;
-      document.getElementById('btn-mobile').disabled = false;
+      btnPc.disabled = false;
+      btnMobile.disabled = false;
       return;
     }
-    pollReportStatus(data.id, statusEl);
+    pollReportStatus(data.id, statusEl, personId, layout);
   })
   .catch(err => {
     statusEl.innerHTML = `<p class="text-sm text-red-500">请求失败: ${err.message}</p>`;
-    document.getElementById('btn-pc').disabled = false;
-    document.getElementById('btn-mobile').disabled = false;
+    btnPc.disabled = false;
+    btnMobile.disabled = false;
   });
 }
 
-function pollReportStatus(reportId, statusEl) {
+function pollReportStatus(reportId, statusEl, personId, layout) {
   let attempts = 0;
-  const maxAttempts = 60; // 60 × 3s = 180s (match backend timeout)
+  const maxAttempts = 90; // 90 × 3s = 270s (backend retries 2x, each 180s max)
   const interval = setInterval(() => {
     attempts++;
+    const elapsed = Math.round(attempts * 3);
+
     if (attempts > maxAttempts) {
       clearInterval(interval);
       statusEl.innerHTML = `
         <div class="text-sm text-amber-500 py-2">
-          ⏱ 生成超时，请稍后在报告历史中查看
-          <button onclick="location.reload()" class="ml-2 text-sky-500 underline">刷新</button>
+          ⏱ 前端等待超时 (${elapsed}s)，后端可能仍在重试中<br>
+          <span class="text-xs text-slate-400">可在报告历史中查看最终结果</span>
         </div>`;
       document.getElementById('btn-pc').disabled = false;
       document.getElementById('btn-mobile').disabled = false;
@@ -246,21 +251,32 @@ function pollReportStatus(reportId, statusEl) {
             <div class="text-sm text-emerald-600 dark:text-emerald-400 py-2">
               ✓ 生成完成 (${data.generation_seconds}s)
             </div>`;
-          // Refresh history
-          htmx.ajax('GET', '/reports/history/${data.person_id}', {target: '#report-history-area'});
           document.getElementById('btn-pc').disabled = false;
           document.getElementById('btn-mobile').disabled = false;
         } else if (data.status === 'failed') {
           clearInterval(interval);
+          const errMsg = data.error_message || '未知错误';
+          const isTimeout = errMsg.toLowerCase().includes('timed out');
           statusEl.innerHTML = `
-            <div class="text-sm text-red-500 py-2">
-              ✗ 生成失败: ${data.error_message || '未知错误'}
-              <button onclick="location.reload()" class="ml-2 text-sky-500 underline">重试</button>
+            <div class="text-sm py-2">
+              <div class="text-red-500 mb-2">✗ 生成失败${isTimeout ? ' (超时)' : ''}</div>
+              <div class="text-xs text-slate-500 dark:text-slate-400 mb-3">${errMsg}</div>
+              <button onclick="generateReport(${personId}, '${layout}')"
+                      class="px-3 py-1.5 text-xs bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition">
+                重新生成
+              </button>
             </div>`;
           document.getElementById('btn-pc').disabled = false;
           document.getElementById('btn-mobile').disabled = false;
         }
-        // else still generating, keep polling
+        // else still generating, show elapsed time
+        else if (attempts % 5 === 0) {
+          // Update elapsed time every 15s
+          const spinEl = statusEl.querySelector('.text-xs.text-slate-400');
+          if (spinEl) {
+            spinEl.textContent = `已等待 ${elapsed}s，后端最多重试 2 次…`;
+          }
+        }
       })
       .catch(() => {}); // ignore transient errors
   }, 3000);
