@@ -55,3 +55,7 @@ Thumbs.db
 
 # User uploads (medical images)
 uploads/
+
+# v0.6.0: test isolation (explicit, even though data/* already covers it)
+data/test/
+data/.web-9001.pid
