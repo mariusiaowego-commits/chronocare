@@ -1,8 +1,8 @@
 # ChronoCare STATUS
 
-> 最后更新: 2026-06-09
+> 最后更新: 2026-06-11
 
-## 当前阶段: v0.5.0 + 前端重设计 + 表单校验 + UX 优化
+## 当前阶段: v0.6.0 — 测试隔离 + 生产 DB 清理
 
 ## 版本历史
 | 版本 | 日期 | 说明 |
@@ -11,6 +11,7 @@
 | v0.3.0 | 2026-05-09 | 精简重构：删除40+文件，聚焦3核心功能 |
 | v0.4.0 | 2026-05-12 | 前端重做 + 后端增强 + 响应式适配 |
 | v0.5.0 | 2026-05-13 | OCR 两层 Pipeline — Swift Vision + LLM 解析 |
+| v0.6.0 | 2026-06-11 | 测试隔离 + 生产 DB 清理 (123 person + 80 medical_records) |
 
 ## 核心功能 (v0.5.0)
 
@@ -82,6 +83,24 @@
 - 图片预览: `/uploads` 静态挂载 + `<img>` + Lightbox
 - 女性角色深粉红: Dashboard 渐变 + 列表边框 + 详情图标
 
+## 2026-06-11 改动摘要
+
+### 测试隔离 (v0.6.0)
+- `tests/conftest.py` 重写：session-scoped monkeypatch `_isolated_engine` fixture
+- SQLite `.backup()` 从生产 DB 拷贝到 tmp 目录，swap engine + session_factory
+- 生产 `database.py` 零改动，uvicorn :8000 不受影响
+- 测试后生产 DB 零污染（已验证两次 run）
+- 分支: `feat/test-isolation` (commit 3989999)
+
+### 生产 DB 清理
+- 一次性脚本 `scripts/cleanup_test_pollution.py` 已执行
+- 删除: 123 person + 80 medical_records (历史测试污染)
+- 备份: `data/backups/chronocare-pre-cleanup-20260611-085928.db`
+- 清理后: 2 真实 person (qian, tjh) + 66 真实 medical_records
+
+### Alma agent 调研 (2026-06-10, default profile)
+- commit bc886ce: PRD + 调研报告 (纯文档，未动业务代码)
+
 ## 2026-06-09 改动摘要
 
 ### 云胶片影像查看器
@@ -136,10 +155,11 @@
 - 数据清理: 177 条测试残留已删除
 
 ## Git
-- 当前分支: `main` @ e54df9b (PR #4 merged)
+- 当前分支: `feat/test-isolation` @ 3989999 (PR pending → main)
+- 上一个 main: `main` @ e54df9b (PR #4 merged)
 - 工作流: feature branch → commit → PR（不用 worktree）
-- pyproject.toml version: 0.5.0
-- 测试: 67/67 通过
+- pyproject.toml version: 0.5.0 (→ 0.6.0 待 bump)
+- 测试: 67/67 通过（隔离 engine，零生产污染）
 
 ## 开发命令
 ```bash
