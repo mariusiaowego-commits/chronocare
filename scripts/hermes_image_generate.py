@@ -40,13 +40,13 @@ def generate_image(prompt: str, aspect: str = "portrait") -> dict:
             ],
             capture_output=True,
             text=True,
-            timeout=120,  # image gen can take a while
+            timeout=300,  # image gen can take a while (complex prompts need more time)
             env={**os.environ, "PYTHONUNBUFFERED": "1"},
         )
     except FileNotFoundError:
         return {"error": "hermes CLI not found. Install with: pip install hermes-agent"}
     except subprocess.TimeoutExpired:
-        return {"error": "Image generation timed out (120s)"}
+        return {"error": "Image generation timed out (300s)"}
 
     if result.returncode != 0:
         return {"error": f"hermes exited with code {result.returncode}: {result.stderr[:500]}"}
