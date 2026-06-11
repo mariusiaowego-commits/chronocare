@@ -117,30 +117,40 @@
     .then(data => {
       const checks = [];
 
-      // hermes CLI
+      // 1. Hermes CLI
       checks.push({
         ok: data.hermes_available,
         label: 'Hermes CLI',
         detail: data.hermes_available ? '可用' : '未找到'
       });
 
-      // Portal login
+      // 2. Portal login
       checks.push({
         ok: data.portal_logged_in,
         label: 'Nous Portal',
         detail: data.portal_logged_in ? '已登录' : '未登录'
       });
 
-      // Image generation
+      // 3. FAL image generation (the actual tool that generates images)
       checks.push({
-        ok: data.image_gen_available,
-        label: '图片生成',
-        detail: data.image_gen_available ? 'Nous 订阅可用' : '不可用'
+        ok: data.fal_image_gen,
+        label: '图片生成 (FAL)',
+        detail: data.tool_gateway || (data.fal_image_gen ? '可用' : '不可用')
       });
 
-      // Provider / Model
-      if (data.provider && data.model) {
-        checks.push({ ok: true, label: '推理模型', detail: data.provider + ' / ' + data.model });
+      // 4. Chat model (the LLM that orchestrates the call)
+      if (data.chat_model_working) {
+        checks.push({
+          ok: true,
+          label: 'Chat 模型',
+          detail: (data.chat_provider || '?') + ' / ' + (data.chat_model || '?') + ' ✓ 验证通过'
+        });
+      } else {
+        checks.push({
+          ok: false,
+          label: 'Chat 模型',
+          detail: (data.chat_provider || '未知') + ' / ' + (data.chat_model || '未知') + ' — 连接失败'
+        });
       }
 
       // Errors
@@ -194,7 +204,7 @@ function generateReport(personId, layout) {
         <path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
       </svg>
       正在生成${layout === 'pc' ? 'PC' : 'Mobile'}版报告…<br>
-      <span class="text-xs text-slate-400">调用 Hermes CLI → image_generate，预计 30~120 秒</span>
+      <span class="text-xs text-slate-400">调用 Hermes CLI → FAL image_generate，预计 30~120 秒</span>
     </div>`;
 
   // Disable buttons during generation
@@ -257,10 +267,11 @@ function pollReportStatus(reportId, statusEl, personId, layout) {
           clearInterval(interval);
           const errMsg = data.error_message || '未知错误';
           const isTimeout = errMsg.toLowerCase().includes('timed out');
+          const isAuth = errMsg.includes('401') || errMsg.includes('authentication');
           statusEl.innerHTML = `
             <div class="text-sm py-2">
-              <div class="text-red-500 mb-2">✗ 生成失败${isTimeout ? ' (超时)' : ''}</div>
-              <div class="text-xs text-slate-500 dark:text-slate-400 mb-3">${errMsg}</div>
+              <div class="text-red-500 mb-2">✗ 生成失败${isTimeout ? ' (超时)' : ''}${isAuth ? ' (认证失败)' : ''}</div>
+              <div class="text-xs text-slate-500 dark:text-slate-400 mb-3 break-all">${errMsg}</div>
               <button onclick="generateReport(${personId}, '${layout}')"
                       class="px-3 py-1.5 text-xs bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition">
                 重新生成
@@ -271,7 +282,6 @@ function pollReportStatus(reportId, statusEl, personId, layout) {
         }
         // else still generating, show elapsed time
         else if (attempts % 5 === 0) {
-          // Update elapsed time every 15s
           const spinEl = statusEl.querySelector('.text-xs.text-slate-400');
           if (spinEl) {
             spinEl.textContent = `已等待 ${elapsed}s，后端最多重试 2 次…`;
