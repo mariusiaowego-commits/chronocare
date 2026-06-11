@@ -143,7 +143,7 @@ async def _hermes_image_generate(prompt: str, aspect: str = "portrait", max_retr
                 stderr=asyncio.subprocess.PIPE,
                 env={**os.environ, "PYTHONUNBUFFERED": "1"},
             )
-            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=180)
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=360)
 
             if proc.returncode != 0:
                 raise RuntimeError(f"Hermes script failed (rc={proc.returncode}): {stderr.decode()[:500]}")
