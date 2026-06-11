@@ -118,44 +118,61 @@ async def generate_report(
     return report
 
 
-async def _hermes_image_generate(prompt: str, aspect: str = "portrait") -> str:
+async def _hermes_image_generate(prompt: str, aspect: str = "portrait", max_retries: int = 2) -> str:
     """Call Hermes CLI via subprocess to generate an image.
 
+    Retries on timeout up to max_retries times.
     Returns the image URL or path string.
     Raises RuntimeError on failure.
     """
     if not HERMES_SCRIPT.exists():
         raise RuntimeError(f"Hermes script not found: {HERMES_SCRIPT}")
 
-    proc = await asyncio.create_subprocess_exec(
-        "python3",
-        str(HERMES_SCRIPT),
-        prompt,
-        "--aspect", aspect,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-        env={**os.environ, "PYTHONUNBUFFERED": "1"},
-    )
-    stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=180)
+    last_error = None
+    for attempt in range(max_retries + 1):
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                "python3",
+                str(HERMES_SCRIPT),
+                prompt,
+                "--aspect", aspect,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env={**os.environ, "PYTHONUNBUFFERED": "1"},
+            )
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=180)
 
-    if proc.returncode != 0:
-        raise RuntimeError(f"Hermes script failed (rc={proc.returncode}): {stderr.decode()[:500]}")
+            if proc.returncode != 0:
+                raise RuntimeError(f"Hermes script failed (rc={proc.returncode}): {stderr.decode()[:500]}")
 
-    try:
-        result = json.loads(stdout.decode().strip())
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(
-            f"Invalid JSON from hermes script: {stdout.decode()[:500]}"
-        ) from exc
+            try:
+                result = json.loads(stdout.decode().strip())
+            except json.JSONDecodeError as exc:
+                raise RuntimeError(
+                    f"Invalid JSON from hermes script: {stdout.decode()[:500]}"
+                ) from exc
 
-    if "error" in result:
-        raise RuntimeError(f"Image generation error: {result['error']}")
+            if "error" in result:
+                error_msg = result["error"]
+                # Check if it's a timeout error
+                if "timed out" in error_msg.lower() and attempt < max_retries:
+                    last_error = error_msg
+                    continue  # retry
+                raise RuntimeError(f"Image generation error: {error_msg}")
 
-    url = result.get("url") or result.get("path") or result.get("image", "")
-    if not url:
-        raise RuntimeError(f"No image URL in result: {result}")
+            url = result.get("url") or result.get("path") or result.get("image", "")
+            if not url:
+                raise RuntimeError(f"No image URL in result: {result}")
 
-    return url
+            return url
+
+        except asyncio.TimeoutError as e:
+            last_error = f"Subprocess timeout (180s), attempt {attempt + 1}/{max_retries + 1}"
+            if attempt < max_retries:
+                continue  # retry
+            raise RuntimeError(f"Image generation timed out after {max_retries + 1} attempts: {last_error}") from e
+
+    raise RuntimeError(f"Image generation failed after {max_retries + 1} attempts: {last_error}")
 
 
 # ---------------------------------------------------------------------------
