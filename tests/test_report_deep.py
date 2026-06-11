@@ -8,13 +8,11 @@ import pytest
 from httpx import AsyncClient
 
 from chronocare.services.report_data import (
-    aggregate_person_data,
-    parse_diagnosis,
-    normalize_diag,
     extract_doctor,
+    normalize_diag,
+    parse_diagnosis,
 )
 from chronocare.services.report_generation import _build_prompt
-
 
 # ── Pure function tests ──
 
