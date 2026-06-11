@@ -2,7 +2,7 @@
 
 > 最后更新: 2026-06-11
 
-## 当前阶段: v0.6.0 — 测试隔离 + 生产 DB 清理
+## 当前阶段: v0.7.0 — 健康报告生成体验升级
 
 ## 版本历史
 | 版本 | 日期 | 说明 |
@@ -12,6 +12,7 @@
 | v0.4.0 | 2026-05-12 | 前端重做 + 后端增强 + 响应式适配 |
 | v0.5.0 | 2026-05-13 | OCR 两层 Pipeline — Swift Vision + LLM 解析 |
 | v0.6.0 | 2026-06-11 | 测试隔离 + 生产 DB 清理 (123 person + 80 medical_records) |
+| v0.7.0 | 2026-06-11 | 健康报告生成体验全面升级 (PR #6) |
 
 ## 核心功能 (v0.5.0)
 
@@ -101,6 +102,15 @@
 ### Alma agent 调研 (2026-06-10, default profile)
 - commit bc886ce: PRD + 调研报告 (纯文档，未动业务代码)
 
+### 健康报告体验升级 (v0.7.0, PR #6)
+- Preflight 环境检查: hermes CLI / Nous Portal / FAL / chat 模型验证
+- 超时重试: _hermes_image_generate 自动重试 2 次
+- 图片本地保存: data/reports/ 目录
+- Dashboard 报告画廊: 缩略图 + 全屏预览 + 失败原因展示
+- Prompt 重写: v3 详细结构 (6站点/4 bento卡片/对比表/行动便签)
+- 诊断归一化: 二尖瓣/心房颤动/高血压 变体处理
+- 生图超时: 120s → 300s
+
 ## 2026-06-09 改动摘要
 
 ### 云胶片影像查看器
@@ -155,10 +165,9 @@
 - 数据清理: 177 条测试残留已删除
 
 ## Git
-- 当前分支: `feat/test-isolation` @ 3989999 (PR pending → main)
-- 上一个 main: `main` @ e54df9b (PR #4 merged)
+- 当前分支: `main` @ a9a2249 (PR #6 merged)
 - 工作流: feature branch → commit → PR（不用 worktree）
-- pyproject.toml version: 0.5.0 (→ 0.6.0 待 bump)
+- pyproject.toml version: 0.6.0
 - 测试: 67/67 通过（隔离 engine，零生产污染）
 
 ## 开发命令
