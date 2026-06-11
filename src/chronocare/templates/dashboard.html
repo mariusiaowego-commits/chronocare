@@ -301,8 +301,8 @@ function openReportModal(personId) {
         .then(r => r.text())
         .then(html => {
             document.getElementById('report-modal-content').innerHTML = html;
-            // Run preflight after modal is loaded
-            runPreflight();
+            // Run preflight after DOM is ready
+            requestAnimationFrame(() => runPreflight());
         });
 }
 function closeReportModal() {
