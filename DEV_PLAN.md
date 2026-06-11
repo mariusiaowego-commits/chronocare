@@ -1,6 +1,6 @@
 # ChronoCare DEV_PLAN
 
-> 最后更新: 2026-05-20
+> 最后更新: 2026-06-11
 
 ## Phase 1~3: 已完成 ✅ (2026-04 ~ 05-04)
 初始开发阶段，包含 147 路由的完整功能。v0.3.0 精简为 4 核心模块。
@@ -41,6 +41,20 @@
 - [x] T0-T5 全部通过
 - [x] 真实化验单端到端验证: 钱精华（上海市老年医学中心，内分泌科）
 
+## v0.5.0 健康报告图 ✅ (2026-06-09, PR #4)
+- [x] T1: ReportGeneration model + data aggregation + API
+- [x] T3: Hermes CLI subprocess image_generate + baoyu prompt
+- [x] T6: 前端 modal + 历史列表 + dashboard 入口
+- [x] Bug fix: extract_doctor 正则双重转义 (中文匹配失败)
+- [x] 测试: 67/67 通过 (含 26 个新测试)
+
+## v0.6.0 测试隔离 + DB 清理 ✅ (2026-06-11, PR #5)
+- [x] 测试不再污染生产 DB: session-scoped monkeypatch `_isolated_engine`
+- [x] SQLite `.backup()` 从生产拷贝到 tmp，pytest 结束自动清理
+- [x] 生产 `database.py` 零改动，uvicorn :8000 不受影响
+- [x] 清理历史污染: 123 person + 80 medical_records
+- [x] 清理后: 2 真实 person (qian, tjh) + 66 真实 medical_records
+
 ## Phase 6: 下一步规划
 
 ### 功能增强
@@ -56,6 +70,8 @@
 - [ ] chronocare-ocr skill 流程验证（真实化验单图片端到端）
 
 ## 下一步行动
-1. 用真实化验单图片走一遍 chronocare-ocr skill 流程验证
-2. 新功能开发用 worktree 工作流 (feature branch → PR → merge)
-3. 清理 DB 测试数据前先备份
+1. 健康报告 T2: 真实数据 research → 设计报告模板
+2. 健康报告: 前端 report detail 页面优化 (当前是 modal)
+3. 多页化验单支持: PDF 转图片后连续识别和合并
+4. iPad 实机测试 + 响应式微调
+5. pyproject.toml version bump → 0.6.0
