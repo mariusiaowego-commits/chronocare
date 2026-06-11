@@ -78,7 +78,8 @@
       <div class="space-y-2">
         {% for r in reports %}
         <div class="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg
-                    bg-slate-50 dark:bg-slate-700/50">
+                    bg-slate-50 dark:bg-slate-700/50 {% if r.status == 'completed' and r.image_path %}cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600{% endif %}"
+             {% if r.status == 'completed' and r.image_path %}onclick="viewReport('{{ r.image_path }}')"{% endif %}>
           <div class="flex items-center gap-2">
             {% if r.layout == 'pc' %}
               {{ icon('layout-dashboard', 14, 'text-sky-500') }}
