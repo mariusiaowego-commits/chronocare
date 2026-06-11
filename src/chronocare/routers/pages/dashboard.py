@@ -107,6 +107,14 @@ async def dashboard(
             color, _ = _bs_status(r.value)
             chart_statuses.append(color)
 
+    # Recent reports for selected person
+    recent_reports = []
+    if selected:
+        from chronocare.services import report_generation as report_svc
+        recent_reports = await report_svc.list_person_reports(db, selected.id, limit=5)
+        # Only show completed reports with images
+        recent_reports = [r for r in recent_reports if r.status == 'completed' and r.image_path]
+
     return templates.TemplateResponse(request, "dashboard.html", {
         "request": request,
         "persons": persons,
@@ -119,4 +127,5 @@ async def dashboard(
         "chart_labels": chart_labels,
         "chart_values": chart_values,
         "chart_statuses": chart_statuses,
+        "recent_reports": recent_reports,
     })

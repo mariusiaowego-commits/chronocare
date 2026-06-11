@@ -170,6 +170,30 @@ function initBsChart(labels, values, statuses) {
         </button>
     </div>
 
+    {# Recent reports gallery #}
+    {% if recent_reports %}
+    <div class="mt-4">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-slate-600 dark:text-slate-300">📋 健康报告</h3>
+            <button onclick="openReportModal({{ selected.id }})" class="text-xs text-sky-500 hover:text-sky-600">+ 生成新报告</button>
+        </div>
+        <div class="flex gap-3 overflow-x-auto pb-2">
+            {% for r in recent_reports %}
+            <div class="flex-shrink-0 w-40 cursor-pointer group" onclick="viewReportFullscreen('{{ r.image_path }}')">
+                <div class="relative w-40 h-56 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 group-hover:border-sky-400 transition">
+                    <img src="{{ r.image_path }}" alt="健康报告" class="w-full h-full object-cover" loading="lazy" />
+                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition"></div>
+                </div>
+                <div class="mt-1.5 flex items-center justify-between">
+                    <span class="text-xs text-slate-500">{{ 'PC' if r.layout == 'pc' else 'Mobile' }}</span>
+                    <span class="text-xs text-slate-400">{{ r.created_at.strftime('%m-%d') }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- ── Two-column content ── -->
     <div class="grid gap-6 lg:grid-cols-2">
         <!-- BS Trend Chart -->
@@ -408,6 +432,21 @@ function viewReport(imageUrl) {
         <button onclick="document.getElementById('report-gen-status').classList.add('hidden')" class="px-3 py-1.5 text-xs bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 transition">关闭预览</button>
       </div>
     </div>`;
+}
+
+function viewReportFullscreen(imageUrl) {
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-pointer';
+  overlay.onclick = () => overlay.remove();
+  overlay.innerHTML = `
+    <div class="relative max-w-4xl max-h-[90vh] p-4" onclick="event.stopPropagation()">
+      <img src="${imageUrl}" alt="健康报告" class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" />
+      <div class="absolute top-2 right-2 flex gap-2">
+        <a href="${imageUrl}" target="_blank" class="px-3 py-1.5 text-xs bg-white/90 text-slate-700 rounded-lg hover:bg-white transition shadow">打开原图</a>
+        <button onclick="this.closest('.fixed').remove()" class="px-3 py-1.5 text-xs bg-white/90 text-slate-700 rounded-lg hover:bg-white transition shadow">关闭</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
 }
 
 // --- Generate report ---
