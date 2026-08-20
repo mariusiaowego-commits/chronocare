@@ -1,8 +1,8 @@
 # ChronoCare STATUS
 
-> 最后更新: 2026-06-11
+> 最后更新: 2026-08-20
 
-## 当前阶段: v0.7.0 — 健康报告生成体验升级
+## 当前阶段: v0.8.0 — 化验指标自然语言查询 + 原件预览
 
 ## 版本历史
 | 版本 | 日期 | 说明 |
@@ -13,6 +13,7 @@
 | v0.5.0 | 2026-05-13 | OCR 两层 Pipeline — Swift Vision + LLM 解析 |
 | v0.6.0 | 2026-06-11 | 测试隔离 + 生产 DB 清理 (123 person + 80 medical_records) |
 | v0.7.0 | 2026-06-11 | 健康报告生成体验全面升级 (PR #6) |
+| v0.8.0 | 2026-08-20 | 化验指标自然语言查询 + PDF/PNG 原件预览 |
 
 ## 核心功能 (v0.5.0)
 
@@ -47,7 +48,8 @@
 - **Layer 2**: LLM 结构化解析 (services/ocr_parser.py, OpenRouter/Gemini)
 - 化验报告彩色状态标记 (绿=正常, 红=偏高, 橙=偏低)
 - **图片预览 + Lightbox** (2026-05-20): 点击放大查看原件
-- 27 个测试全部通过
+- **PDF 首页缩略图** (2026-08-20): 原件不再塞进 `<img>`；`/preview` + `/file`
+- 化验 JSON 可自然语言检索（见下）
 
 ### 5. 仪表盘 ✅
 - 人员切换器 + 健康预警横幅
@@ -65,6 +67,22 @@
 - Jinja2 macro (`macros/icon.html`) 统一调用
 - 0 emoji 残留，全部替换为 SVG
 - 深色模式 `currentColor` 自动适配
+
+## 2026-08-20 改动摘要
+
+### 化验指标自然语言查询 (v0.8.0)
+- 仪表盘搜索框 + `/query` 结果页 + `GET /api/lab-query?q=`
+- 规则优先解析人名/指标/时间（妈妈→qian，HbA1c→糖化血红蛋白），认不准再 LLM
+- 只查结构化 `lab_results.tests`（当前实质是 qian 的 15 份化验单）
+- 结果含数值、状态、参考范围、简要分析、来源化验单、预览图
+
+### 原件预览修复
+- 根因：58/66 原件是 PDF，详情页用 `<img src="...pdf">`，不是文件丢失
+- PDF 用 pdftoppm 生成首页缩略图；PNG 原样显示；均可「打开原件」
+- `/uploads` 改为项目根绝对路径
+
+### 列表「已识别」
+- 不再读取不存在的 `processed_at`，改用 `ocr_text` / `lab_results.tests`
 
 ## 2026-05-20 改动摘要
 
@@ -165,10 +183,10 @@
 - 数据清理: 177 条测试残留已删除
 
 ## Git
-- 当前分支: `main` @ a9a2249 (PR #6 merged)
+- 当前分支: `feat/lab-query-preview`
 - 工作流: feature branch → commit → PR（不用 worktree）
-- pyproject.toml version: 0.6.0
-- 测试: 67/67 通过（隔离 engine，零生产污染）
+- pyproject.toml version: 0.8.0
+- 测试: 85 passed（隔离 engine，零生产污染）
 
 ## 开发命令
 ```bash
