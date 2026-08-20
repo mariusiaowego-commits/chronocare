@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +20,7 @@ from chronocare.services.medical_record import (
     upload_image,
 )
 from chronocare.services.person import list_persons
+from chronocare.services.preview import ensure_thumbnail, media_type_for, preview_info, resolve_record_file
 
 router = APIRouter(tags=["pages"])
 
@@ -87,7 +88,46 @@ async def medical_record_detail(request: Request, record_id: int, db: AsyncSessi
     return templates.TemplateResponse(request, "medical_record/detail.html", {
         "request": request,
         "record": record,
+        "preview": preview_info(record.id, record.image_path),
     })
+
+
+@router.get("/medical-records/{record_id}/file")
+async def medical_record_file(record_id: int, db: AsyncSession = Depends(get_db)):
+    """Stream the original uploaded file (image or PDF) by record id."""
+    record = await get_medical_record(db, record_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Record not found")
+    source = resolve_record_file(record.image_path)
+    if source is None:
+        raise HTTPException(status_code=404, detail="原件文件不存在")
+    return FileResponse(
+        path=source,
+        media_type=media_type_for(source),
+        filename=source.name,
+        content_disposition_type="inline",
+    )
+
+
+@router.get("/medical-records/{record_id}/preview")
+async def medical_record_preview(record_id: int, db: AsyncSession = Depends(get_db)):
+    """Preview image: original for photos, first-page thumbnail for PDFs."""
+    record = await get_medical_record(db, record_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Record not found")
+    source = resolve_record_file(record.image_path)
+    if source is None:
+        raise HTTPException(status_code=404, detail="原件文件不存在")
+    try:
+        preview_path = await ensure_thumbnail(record.id, source)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"无法生成预览: {exc}") from exc
+    return FileResponse(
+        path=preview_path,
+        media_type=media_type_for(preview_path),
+        filename=preview_path.name,
+        content_disposition_type="inline",
+    )
 
 
 @router.get("/medical-records/{record_id}/edit", response_class=HTMLResponse)

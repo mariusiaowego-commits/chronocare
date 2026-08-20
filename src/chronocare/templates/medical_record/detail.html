@@ -52,20 +52,29 @@
         </div>
     </div>
 
-    <!-- 图片上传 -->
+    <!-- 原件预览 -->
     <div class="section">
-        <h2><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/camera.svg' ignore missing %}</svg> 图片上传</h2>
-        {% if record.image_path %}
+        <h2><svg class="inline-block align-middle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/camera.svg' ignore missing %}</svg> 原件预览</h2>
+        {% if preview and preview.exists %}
         <div class="image-preview">
-            <img src="/{{ record.image_path }}" alt="医疗文档图片"
+            <img src="{{ preview.preview_url }}" alt="医疗文档预览"
                  class="max-w-full max-h-[600px] rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm cursor-pointer hover:shadow-md transition"
                  onclick="openLightbox(this.src)"
                  loading="lazy">
-            <p class="text-xs text-slate-400 mt-2">{{ record.image_path.split('/')[-1] }}</p>
+            <p class="text-xs text-slate-400 mt-2">{{ preview.filename }}{% if preview.is_pdf %}（PDF 首页）{% endif %}</p>
+            <p class="mt-2">
+                <a href="{{ preview.file_url }}" target="_blank" rel="noopener" class="btn">打开原件</a>
+            </p>
         </div>
+        {% elif record.image_path %}
+        <p class="text-sm" style="color:#c62828">原件文件不存在：{{ record.image_path }}</p>
+        <form method="post" action="/medical-records/{{ record.id }}/upload" enctype="multipart/form-data" class="mt-3">
+            <input type="file" name="file" accept="image/*,.pdf" required>
+            <button type="submit" class="btn">重新上传</button>
+        </form>
         {% else %}
         <form method="post" action="/medical-records/{{ record.id }}/upload" enctype="multipart/form-data">
-            <input type="file" name="file" accept="image/*" required>
+            <input type="file" name="file" accept="image/*,.pdf" required>
             <button type="submit" class="btn">上传图片</button>
         </form>
         {% endif %}
