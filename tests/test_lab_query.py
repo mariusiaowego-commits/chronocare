@@ -8,6 +8,7 @@ from chronocare.services.lab_query import (
     find_person_key,
     parse_intent_rules,
     run_lab_query,
+    suggest_lab_queries,
 )
 
 
@@ -157,3 +158,37 @@ async def test_api_and_page(client):
     assert "糖化血红蛋白" in html
     assert "/medical-records/5/preview" in html
     assert "来源化验单" in html
+    assert "data-lab-suggest-input" in html
+
+
+@pytest.mark.asyncio
+async def test_suggest_related_metrics():
+    async with async_session_factory() as db:
+        empty = await suggest_lab_queries(db, "")
+        labels = [row["label"] for row in empty]
+        assert "肝功能" in labels
+        assert "最近一次化验" in labels
+
+        chol = await suggest_lab_queries(db, "胆")
+        chol_labels = [row["label"] for row in chol]
+        assert "总胆固醇" in chol_labels
+
+        mom = await suggest_lab_queries(db, "妈妈 糖")
+        assert any("糖化" in row["label"] or "糖化" in row["query"] for row in mom)
+        assert all("妈妈" in row["query"] or "qian" in row["query"] for row in mom)
+
+
+@pytest.mark.asyncio
+async def test_suggest_api(client):
+    blank = await client.get("/api/lab-query/suggest", params={"q": ""})
+    assert blank.status_code == 200
+    assert blank.json()["items"]
+
+    typed = await client.get("/api/lab-query/suggest", params={"q": "胆固醇"})
+    labels = [row["label"] for row in typed.json()["items"]]
+    assert "总胆固醇" in labels
+
+    dash = await client.get("/dashboard")
+    assert dash.status_code == 200
+    assert "data-lab-suggest-input" in dash.text
+    assert "/static/js/lab-suggest.js" in dash.text

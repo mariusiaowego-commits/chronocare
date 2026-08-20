@@ -16,6 +16,7 @@ from chronocare.models.medical_record import MedicalRecord
 from chronocare.models.person import Person
 from chronocare.services.lab_aliases import (
     METRIC_ALIAS_PAIRS,
+    PANEL_ALIASES,
     PANELS,
     PERSON_ALIAS_PAIRS,
     PERSON_ALIASES,
@@ -710,6 +711,150 @@ async def run_lab_query(
         ok=True,
         kind="metric",
     )
+
+
+_SKIP_SUGGEST_NAMES = frozenset(
+    {
+        "肝",
+        "胆囊内",
+        "胆囊底部",
+        "左肾上腺局部",
+        "双侧肾上腺位置形态",
+        "颜色",
+        "透明度",
+        "透亮度",
+        "有形成分报告",
+    }
+)
+_OK_SINGLE_CHAR = frozenset({"钾", "钠", "氯"})
+_DEFAULT_METRICS = (
+    "糖化血红蛋白",
+    "葡萄糖（空腹）",
+    "肌酐",
+    "总胆固醇",
+    "甘油三酯",
+    "白细胞计数",
+)
+_KIND_HINT = {"metric": "化验指标", "panel": "组合查询", "overview": "最近化验"}
+
+
+def _keep_suggest_name(name: str) -> bool:
+    if name in _SKIP_SUGGEST_NAMES:
+        return False
+    if len(name) == 1 and name not in _OK_SINGLE_CHAR:
+        return False
+    return True
+
+
+def _person_token(text: str, person_key: str | None) -> str:
+    if not person_key:
+        return ""
+    for alias in PERSON_ALIASES.get(person_key, ()):
+        if alias and alias in text:
+            return alias
+    return person_key
+
+
+def _suggest_score(needle: str, name: str) -> int:
+    q = normalize_text(needle)
+    n = normalize_text(name)
+    if not q or not n:
+        return 0
+    best = 0
+    if q == n:
+        best = 100
+    elif n.startswith(q):
+        best = max(best, 90 + min(len(q), 8))
+    elif q in n:
+        best = max(best, 75 + min(len(q), 15))
+    for alias in (name, *aliases_for_test(name)):
+        a = normalize_text(alias)
+        if not a:
+            continue
+        if a == q:
+            best = max(best, 97)
+        elif a.startswith(q) or q in a:
+            best = max(best, 72 + min(len(q), 12))
+    return best
+
+
+def _panel_suggest_score(needle: str, panel: str) -> int:
+    q = normalize_text(needle)
+    if not q:
+        return 0
+    best = 0
+    for alias in (panel, *PANEL_ALIASES.get(panel, ())):
+        a = normalize_text(alias)
+        if not a:
+            continue
+        if a == q:
+            best = max(best, 100)
+        elif a.startswith(q) or q in a or a in q:
+            best = max(best, 80 + min(len(q), 10))
+    return best
+
+
+async def suggest_lab_queries(
+    db: AsyncSession,
+    query: str,
+    *,
+    limit: int = 10,
+) -> list[dict[str, str]]:
+    """Typeahead rows: related panels, metrics, and latest-lab shortcuts."""
+    text = (query or "").strip()
+    persons = await list_persons(db)
+    lab_people: list[Person] = []
+    name_set: set[str] = set()
+    for person in persons:
+        recs = await list_medical_records(db, person_id=person.id, record_type="lab_report")
+        names = [n for n in _unique_names(_catalog(recs, person)) if _keep_suggest_name(n)]
+        if names:
+            lab_people.append(person)
+            name_set.update(names)
+
+    person_key = find_person_key(text) if text else None
+    token = _person_token(text, person_key)
+    remainder = _metric_remainder(text, person_key) if text else ""
+    needle = remainder or text
+
+    def pack(label: str, kind: str, who: str | None = None) -> dict[str, str]:
+        prefix = (who or token or "").strip()
+        qtext = f"{prefix} {label}".strip() if prefix else label
+        return {
+            "query": qtext,
+            "label": label,
+            "hint": _KIND_HINT.get(kind, kind),
+            "kind": kind,
+        }
+
+    rows: list[tuple[int, dict[str, str]]] = []
+    seen: set[str] = set()
+
+    def add(score: int, item: dict[str, str]) -> None:
+        key = item["query"]
+        if score <= 0 or key in seen:
+            return
+        seen.add(key)
+        rows.append((score, item))
+
+    if not needle:
+        for person in lab_people:
+            add(60, pack("最近一次化验", "overview", person.name))
+        for panel in ("肝功能", "血脂", "肾功能", "血常规"):
+            add(55, pack(panel, "panel", token or None))
+        for metric in _DEFAULT_METRICS:
+            if metric in name_set:
+                add(50, pack(metric, "metric", token or None))
+    else:
+        overview_score = 50 if ("化验" in needle or "最近" in needle) else 0
+        add(overview_score, pack("最近一次化验", "overview", token or None))
+        for panel in PANELS:
+            add(_panel_suggest_score(needle, panel), pack(panel, "panel", token or None))
+        for name in name_set:
+            add(_suggest_score(needle, name), pack(name, "metric", token or None))
+
+    rows.sort(key=lambda item: (-item[0], len(item[1]["label"])))
+    return [item for _, item in rows[:limit]]
 
 
 def _fmt_hit(hit: LabHit) -> str:
