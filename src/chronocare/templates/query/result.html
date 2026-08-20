@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}指标查询 - ChronoCare{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-5">
+        <svg class="inline-block align-middle" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/search.svg' ignore missing %}</svg>
+        指标查询
+    </h1>
+
+    <form method="get" action="/query" class="mb-6">
+        <div class="flex gap-2">
+            <input type="search" name="q" value="{{ q }}"
+                   placeholder="例如：qian 最近一次糖化血红蛋白怎么样"
+                   class="flex-1 px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600
+                          bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
+                          focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
+                   autofocus>
+            <button type="submit"
+                    class="px-5 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-medium shadow-sm">
+                查询
+            </button>
+        </div>
+    </form>
+
+    {% if not q %}
+    <p class="text-sm text-slate-500 mb-3">试试这样问：</p>
+    <div class="flex flex-wrap gap-2">
+        {% for ex in examples %}
+        <a href="/query?q={{ ex|urlencode }}"
+           class="px-3 py-1.5 rounded-full text-sm bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-sky-900/30 hover:text-sky-700">
+            {{ ex }}
+        </a>
+        {% endfor %}
+    </div>
+    {% elif result and result.ok and result.hit %}
+    {% set hit = result.hit %}
+    <div class="space-y-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+            <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">{{ hit.person_name }} · {{ hit.visit_date or '日期不详' }}</p>
+            <h2 class="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-3">{{ hit.test_name }}</h2>
+            <div class="flex items-end gap-3 flex-wrap">
+                <span class="text-4xl font-bold text-slate-900 dark:text-white">{{ hit.value }}</span>
+                {% if hit.unit %}
+                <span class="text-lg text-slate-500 mb-1">{{ hit.unit }}</span>
+                {% endif %}
+                {% set st = hit.status %}
+                <span class="mb-1 px-2.5 py-1 rounded-full text-sm font-medium
+                    {% if st == 'normal' %}bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200
+                    {% elif st in ['high', 'slightly_high'] %}bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200
+                    {% elif st in ['low', 'slightly_low'] %}bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200
+                    {% else %}bg-slate-100 text-slate-600{% endif %}">
+                    {% if st == 'normal' %}正常
+                    {% elif st == 'high' %}偏高
+                    {% elif st == 'slightly_high' %}轻微偏高
+                    {% elif st == 'low' %}偏低
+                    {% elif st == 'slightly_low' %}轻微偏低
+                    {% else %}{{ st or '未知' }}{% endif %}
+                </span>
+            </div>
+            {% if hit.reference and hit.reference not in ['None', 'null'] %}
+            <p class="mt-3 text-sm text-slate-500">参考范围：{{ hit.reference }}</p>
+            {% endif %}
+        </div>
+
+        <div class="bg-sky-50 dark:bg-sky-900/20 rounded-2xl border border-sky-100 dark:border-sky-800 p-5">
+            <h3 class="text-sm font-semibold text-sky-800 dark:text-sky-200 mb-2">分析</h3>
+            <p class="text-sm leading-relaxed text-slate-700 dark:text-slate-200">{{ result.analysis }}</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+            <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">来源化验单</h3>
+            <div class="flex gap-4 flex-wrap items-start">
+                {% if preview %}
+                <a href="{{ preview.detail_url }}" class="block w-40 shrink-0">
+                    <img src="{{ preview.preview_url }}" alt="化验单预览"
+                         class="w-40 h-52 object-contain rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm hover:shadow-md cursor-pointer bg-slate-50"
+                         onclick="event.preventDefault(); openQueryLightbox('{{ preview.preview_url }}')">
+                </a>
+                {% endif %}
+                <div class="min-w-0 flex-1 space-y-1">
+                    <p class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ hit.hospital or '医院未填写' }}</p>
+                    <p class="text-xs text-slate-500">{{ hit.department or '' }} · {{ hit.visit_date or '日期不详' }}</p>
+                    <p class="text-xs text-slate-400">记录 #{{ hit.record_id }}</p>
+                    <div class="flex gap-2 pt-3">
+                        <a href="/medical-records/{{ hit.record_id }}"
+                           class="px-3 py-1.5 rounded-lg text-sm bg-violet-600 text-white hover:bg-violet-700">查看化验单</a>
+                        {% if preview %}
+                        <a href="{{ preview.file_url }}" target="_blank" rel="noopener"
+                           class="px-3 py-1.5 rounded-lg text-sm border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">打开原件</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% elif result %}
+    <div class="rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-5">
+        <p class="text-sm text-amber-800 dark:text-amber-200">{{ result.message }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<div id="query-lightbox" class="fixed inset-0 z-50 bg-black/85 hidden items-center justify-center cursor-zoom-out" onclick="this.classList.add('hidden'); this.classList.remove('flex')">
+    <img id="query-lightbox-img" src="" alt="放大预览" class="max-w-[95vw] max-h-[95vh] rounded-lg">
+</div>
+<script>
+function openQueryLightbox(src) {
+    const lb = document.getElementById('query-lightbox');
+    document.getElementById('query-lightbox-img').src = src;
+    lb.classList.remove('hidden');
+    lb.classList.add('flex');
+}
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        const lb = document.getElementById('query-lightbox');
+        lb.classList.add('hidden');
+        lb.classList.remove('flex');
+    }
+});
+</script>
+{% endblock %}

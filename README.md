@@ -1,6 +1,6 @@
 # ChronoCare
 
-老年父母健康管理平台 — v0.5.0
+老年父母健康管理平台 — v0.8.0
 
 ## 技术栈
 
@@ -20,6 +20,7 @@ uv run uvicorn chronocare.main:app --reload
 
 # 访问
 open http://localhost:8000
+# 指标查询: /query  例如「qian 最近一次糖化血红蛋白怎么样」
 ```
 
 ## 项目结构
