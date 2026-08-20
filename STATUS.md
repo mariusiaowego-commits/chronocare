@@ -183,10 +183,10 @@
 - 数据清理: 177 条测试残留已删除
 
 ## Git
-- 当前分支: `feat/lab-query-preview`
+- 当前分支: `main` @ 2446f39 (PR 7 merged)
 - 工作流: feature branch → commit → PR（不用 worktree）
 - pyproject.toml version: 0.8.0
-- 测试: 85 passed（隔离 engine，零生产污染）
+- 测试: 89 passed（隔离 engine，零生产污染）
 
 ## 开发命令
 ```bash
