@@ -12,16 +12,18 @@ router = APIRouter(prefix="/api/lab-query", tags=["Lab Query"])
 @router.get("/suggest")
 async def api_lab_suggest(
     q: str = Query(""),
+    person_id: int | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
-    items = await suggest_lab_queries(db, q)
+    items = await suggest_lab_queries(db, q, person_id=person_id)
     return {"items": items}
 
 
 @router.get("")
 async def api_lab_query(
     q: str = Query(..., min_length=1),
+    person_id: int | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await run_lab_query(db, q)
+    result = await run_lab_query(db, q, person_id=person_id)
     return result_to_dict(result)

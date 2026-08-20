@@ -4,18 +4,36 @@
 
 {% block content %}
 <div class="max-w-3xl mx-auto">
-    <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-5">
-        <svg class="inline-block align-middle" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/search.svg' ignore missing %}</svg>
-        指标查询
-    </h1>
+    <div class="mb-5 flex items-center justify-between gap-4 flex-wrap">
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">
+            <svg class="inline-block align-middle" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{% include 'icons/search.svg' ignore missing %}</svg>
+            指标查询
+        </h1>
+        {% if persons %}
+        <div class="flex gap-2 flex-wrap">
+            {% for p in persons %}
+            <a href="/query?person_id={{ p.id }}{% if q %}&q={{ q|urlencode }}{% endif %}"
+               class="px-4 py-2 rounded-full text-sm font-medium transition-all
+                      {{ 'bg-sky-600 text-white shadow-md ring-2 ring-sky-400' if selected and selected.id == p.id
+                         else 'bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-sky-400' }}">
+                {{ p.name }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
 
-    {{ lab_search(q=q, input_id='query-box', autofocus=true) }}
+    {% if selected %}
+    <p class="text-sm text-slate-500 mb-3">当前查询：<span class="font-medium text-slate-700 dark:text-slate-200">{{ selected.name }}</span></p>
+    {% endif %}
 
-    {% if not q %}
+    {{ lab_search(q=q, input_id='query-box', autofocus=true, person_id=selected.id if selected else None, person_name=selected.name if selected else '') }}
+
+    {% if not q and selected %}
     <p class="text-sm text-slate-500 mb-3">试试这样问：</p>
     <div class="flex flex-wrap gap-2">
         {% for ex in examples %}
-        <a href="/query?q={{ ex|urlencode }}"
+        <a href="/query?person_id={{ selected.id }}&q={{ ex|urlencode }}"
            class="px-3 py-1.5 rounded-full text-sm bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-sky-900/30 hover:text-sky-700">
             {{ ex }}
         </a>
@@ -130,8 +148,7 @@
         {% if result.suggestions %}
         <div class="flex flex-wrap gap-2 mt-3">
             {% for s in result.suggestions %}
-            {% set sq = (result.intent.person_name ~ ' ' ~ s) if result.intent.person_name else s %}
-            <a href="/query?q={{ sq|urlencode }}"
+            <a href="/query?person_id={{ selected.id }}&q={{ s|urlencode }}"
                class="px-3 py-1.5 rounded-full text-sm bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-200 hover:bg-amber-100">
                 {{ s }}
             </a>

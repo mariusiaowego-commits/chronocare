@@ -89,7 +89,7 @@ function initBsChart(labels, values, statuses) {
         {% endif %}
     </div>
 
-    {{ lab_search(input_id='dash-query') }}
+    {{ lab_search(input_id='dash-query', person_id=selected.id if selected else None, person_name=selected.name if selected else '') }}
 
     {% if selected %}
     <!-- ── Health Alerts ── -->
