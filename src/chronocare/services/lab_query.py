@@ -439,8 +439,18 @@ def _catalog(records: list[MedicalRecord], person: Person) -> list[LabHit]:
     return hits
 
 
+def _all_person_alias_tokens() -> tuple[str, ...]:
+    tokens: list[str] = []
+    for key, aliases in PERSON_ALIASES.items():
+        tokens.append(key)
+        tokens.extend(aliases)
+    return tuple(tokens)
+
+
 def _metric_remainder(text: str, person_key: str | None) -> str:
     remainder = text
+    # Always strip person names so "qian 胆固醇" is just the metric once a person is selected.
+    remainder = _strip_tokens(remainder, _all_person_alias_tokens())
     if person_key:
         remainder = _strip_tokens(remainder, PERSON_ALIASES.get(person_key, (person_key,)))
     remainder = _strip_tokens(remainder, STOP_WORDS)
@@ -587,53 +597,49 @@ async def run_lab_query(
     db: AsyncSession,
     query: str,
     *,
+    person_id: int | None = None,
     allow_llm: bool = True,
     llm_fn=None,
 ) -> LabQueryResult:
     text = (query or "").strip()
+    if person_id is None:
+        return LabQueryResult(
+            intent=QueryIntent(raw=text),
+            message="请先选择要查询的人员，再输入指标。",
+        )
     if not text:
         return LabQueryResult(
             intent=QueryIntent(raw=""),
-            message="请输入要查询的人员、指标，例如：qian 最近一次糖化血红蛋白怎么样",
+            message="请输入要查的指标，例如：胆固醇、肝功能、最近一次化验",
         )
 
     intent = parse_intent_rules(text)
     persons = await list_persons(db)
+    person = next((p for p in persons if p.id == person_id), None)
+    if person is None:
+        return LabQueryResult(intent=intent, message="找不到所选人员。")
+    intent.person_id = person.id
+    intent.person_name = person.name
+    intent.person_key = person.name
+    intent.inferred_person = False
 
-    remainder = _metric_remainder(text, intent.person_key)
+    remainder = _metric_remainder(text, person.name)
     panel = find_panel(remainder)
     if not intent.metric and remainder:
         intent.metric = remainder
+    elif intent.metric:
+        # Person names in the typed text must not override the selected person.
+        intent.person_key = person.name
+        intent.metric = remainder or intent.metric
 
     if allow_llm and not intent.metric and not panel and remainder:
         llm_fn = llm_fn or _call_llm_intent
         llm_data = llm_fn(text)
         if llm_data:
             intent = merge_llm_intent(intent, llm_data)
-            remainder = intent.metric or remainder
-
-    person = resolve_person(persons, intent.person_key)
-    if intent.person_key and person is None:
-        return LabQueryResult(intent=intent, message=f"找不到人员「{intent.person_key}」。目前档案是 qian / tjh。")
-
-    if person is None:
-        lab_owners: list[Person] = []
-        for p in persons:
-            recs = await list_medical_records(db, person_id=p.id, record_type="lab_report")
-            if any(_tests_of(r) for r in recs):
-                lab_owners.append(p)
-        if len(lab_owners) == 1:
-            person = lab_owners[0]
             intent.person_id = person.id
             intent.person_name = person.name
-            intent.inferred_person = True
-        elif not lab_owners:
-            return LabQueryResult(intent=intent, message="目前没有任何结构化化验结果可查询。")
-        else:
-            return LabQueryResult(intent=intent, message="请指定要查询的人员，例如：qian 或 妈妈。")
-    else:
-        intent.person_id = person.id
-        intent.person_name = person.name
+            remainder = intent.metric or remainder
 
     records = await list_medical_records(db, person_id=person.id, record_type="lab_report")
     catalog = _catalog(records, person)
@@ -746,15 +752,6 @@ def _keep_suggest_name(name: str) -> bool:
     return True
 
 
-def _person_token(text: str, person_key: str | None) -> str:
-    if not person_key:
-        return ""
-    for alias in PERSON_ALIASES.get(person_key, ()):
-        if alias and alias in text:
-            return alias
-    return person_key
-
-
 def _suggest_score(needle: str, name: str) -> int:
     q = normalize_text(needle)
     n = normalize_text(name)
@@ -798,30 +795,27 @@ async def suggest_lab_queries(
     db: AsyncSession,
     query: str,
     *,
+    person_id: int | None = None,
     limit: int = 10,
 ) -> list[dict[str, str]]:
-    """Typeahead rows: related panels, metrics, and latest-lab shortcuts."""
-    text = (query or "").strip()
+    """Typeahead rows for one selected person only."""
+    if person_id is None:
+        return []
     persons = await list_persons(db)
-    lab_people: list[Person] = []
-    name_set: set[str] = set()
-    for person in persons:
-        recs = await list_medical_records(db, person_id=person.id, record_type="lab_report")
-        names = [n for n in _unique_names(_catalog(recs, person)) if _keep_suggest_name(n)]
-        if names:
-            lab_people.append(person)
-            name_set.update(names)
+    person = next((p for p in persons if p.id == person_id), None)
+    if person is None:
+        return []
 
-    person_key = find_person_key(text) if text else None
-    token = _person_token(text, person_key)
-    remainder = _metric_remainder(text, person_key) if text else ""
+    recs = await list_medical_records(db, person_id=person.id, record_type="lab_report")
+    name_set = {n for n in _unique_names(_catalog(recs, person)) if _keep_suggest_name(n)}
+
+    text = (query or "").strip()
+    remainder = _metric_remainder(text, person.name) if text else ""
     needle = remainder or text
 
-    def pack(label: str, kind: str, who: str | None = None) -> dict[str, str]:
-        prefix = (who or token or "").strip()
-        qtext = f"{prefix} {label}".strip() if prefix else label
+    def pack(label: str, kind: str) -> dict[str, str]:
         return {
-            "query": qtext,
+            "query": label,
             "label": label,
             "hint": _KIND_HINT.get(kind, kind),
             "kind": kind,
@@ -838,20 +832,20 @@ async def suggest_lab_queries(
         rows.append((score, item))
 
     if not needle:
-        for person in lab_people:
-            add(60, pack("最近一次化验", "overview", person.name))
-        for panel in ("肝功能", "血脂", "肾功能", "血常规"):
-            add(55, pack(panel, "panel", token or None))
-        for metric in _DEFAULT_METRICS:
-            if metric in name_set:
-                add(50, pack(metric, "metric", token or None))
+        add(60, pack("最近一次化验", "overview"))
+        if name_set:
+            for panel in ("肝功能", "血脂", "肾功能", "血常规"):
+                add(55, pack(panel, "panel"))
+            for metric in _DEFAULT_METRICS:
+                if metric in name_set:
+                    add(50, pack(metric, "metric"))
     else:
         overview_score = 50 if ("化验" in needle or "最近" in needle) else 0
-        add(overview_score, pack("最近一次化验", "overview", token or None))
+        add(overview_score, pack("最近一次化验", "overview"))
         for panel in PANELS:
-            add(_panel_suggest_score(needle, panel), pack(panel, "panel", token or None))
+            add(_panel_suggest_score(needle, panel), pack(panel, "panel"))
         for name in name_set:
-            add(_suggest_score(needle, name), pack(name, "metric", token or None))
+            add(_suggest_score(needle, name), pack(name, "metric"))
 
     rows.sort(key=lambda item: (-item[0], len(item[1]["label"])))
     return [item for _, item in rows[:limit]]

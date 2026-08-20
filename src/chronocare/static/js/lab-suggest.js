@@ -64,10 +64,17 @@
         }
 
         async function load(q) {
+            const personId = form.querySelector('input[name="person_id"]')?.value;
+            if (!personId) {
+                items = [];
+                hide();
+                return;
+            }
             const key = q.trim();
             lastQ = key;
             try {
-                const res = await fetch(`/api/lab-query/suggest?q=${encodeURIComponent(key)}`);
+                const params = new URLSearchParams({ q: key, person_id: personId });
+                const res = await fetch(`/api/lab-query/suggest?${params}`);
                 if (!res.ok) return;
                 const data = await res.json();
                 if (lastQ !== key) return;
