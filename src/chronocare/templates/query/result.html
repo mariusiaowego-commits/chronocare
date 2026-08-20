@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/lab_search.html" import lab_search %}
 {% block title %}指标查询 - ChronoCare{% endblock %}
 
 {% block content %}
@@ -8,20 +9,7 @@
         指标查询
     </h1>
 
-    <form method="get" action="/query" class="mb-6">
-        <div class="flex gap-2">
-            <input type="search" name="q" value="{{ q }}"
-                   placeholder="例如：qian 最近一次糖化血红蛋白怎么样"
-                   class="flex-1 px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600
-                          bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
-                          focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
-                   autofocus>
-            <button type="submit"
-                    class="px-5 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-medium shadow-sm">
-                查询
-            </button>
-        </div>
-    </form>
+    {{ lab_search(q=q, input_id='query-box', autofocus=true) }}
 
     {% if not q %}
     <p class="text-sm text-slate-500 mb-3">试试这样问：</p>
