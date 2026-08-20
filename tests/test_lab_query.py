@@ -82,7 +82,63 @@ async def test_query_missing_metric_message():
     async with async_session_factory() as db:
         result = await run_lab_query(db, "qian 最近一次飞行速度", allow_llm=False)
         assert result.ok is False
-        assert "指标" in result.message
+        assert "没有找到" in result.message
+
+
+@pytest.mark.asyncio
+async def test_query_real_names_not_just_aliases():
+    async with async_session_factory() as db:
+        chol = await run_lab_query(db, "胆固醇", allow_llm=False)
+        assert chol.ok
+        assert chol.hit is not None
+        assert chol.hit.test_name == "总胆固醇"
+
+        tg = await run_lab_query(db, "甘油三酯", allow_llm=False)
+        assert tg.ok and tg.hit is not None
+        assert tg.hit.test_name == "甘油三酯"
+
+        ga = await run_lab_query(db, "糖化白蛋白", allow_llm=False)
+        assert ga.ok and ga.hit is not None
+        assert ga.hit.test_name == "糖化白蛋白"
+
+        fbg = await run_lab_query(db, "空腹血糖", allow_llm=False)
+        assert fbg.ok and fbg.hit is not None
+        assert "空腹" in fbg.hit.test_name
+
+        wbc = await run_lab_query(db, "白细胞", allow_llm=False)
+        assert wbc.ok and wbc.hit is not None
+        assert wbc.hit.test_name == "白细胞计数"
+        assert "10^9" in (wbc.hit.unit or "") or "10⁹" in (wbc.hit.unit or "")
+
+        k = await run_lab_query(db, "钾", allow_llm=False)
+        assert k.ok and k.hit is not None
+        assert k.hit.test_name == "钾"
+
+
+@pytest.mark.asyncio
+async def test_query_panels_and_overview():
+    async with async_session_factory() as db:
+        liver = await run_lab_query(db, "妈妈肝功能", allow_llm=False)
+        assert liver.ok
+        assert liver.kind == "panel"
+        names = {h.test_name for h in liver.hits}
+        assert "丙氨酸氨基转移酶" in names
+        assert "肌酐" not in names
+
+        lipids = await run_lab_query(db, "血脂", allow_llm=False)
+        assert lipids.ok and lipids.kind == "panel"
+        lipid_names = {h.test_name for h in lipids.hits}
+        assert "总胆固醇" in lipid_names
+        assert "甘油三酯" in lipid_names
+
+        overview = await run_lab_query(db, "钱精华最近一次化验", allow_llm=False)
+        assert overview.ok
+        assert overview.kind == "overview"
+        assert len(overview.hits) >= 3
+
+        bp = await run_lab_query(db, "血压", allow_llm=False)
+        assert bp.ok is False
+        assert "不在化验单" in bp.message
 
 
 @pytest.mark.asyncio

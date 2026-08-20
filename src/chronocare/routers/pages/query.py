@@ -32,10 +32,12 @@ async def lab_query_page(
                 "detail_url": f"/medical-records/{result.hit.record_id}",
             }
     examples = [
+        "妈妈最近一次化验",
+        "qian 胆固醇",
+        "肝功能",
         "qian 最近一次糖化血红蛋白怎么样",
-        "妈妈上次肌酐",
-        "qian 尿微量白蛋白",
-        "qian 2025-12-30 ALT",
+        "空腹血糖",
+        "甘油三酯",
     ]
     return templates.TemplateResponse(
         request,

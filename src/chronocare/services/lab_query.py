@@ -16,9 +16,12 @@ from chronocare.models.medical_record import MedicalRecord
 from chronocare.models.person import Person
 from chronocare.services.lab_aliases import (
     METRIC_ALIAS_PAIRS,
+    PANELS,
     PERSON_ALIAS_PAIRS,
     PERSON_ALIASES,
+    aliases_for_test,
     canonical_metric_names,
+    find_panel,
     normalize_text,
 )
 from chronocare.services.medical_record import list_medical_records
@@ -114,6 +117,9 @@ class LabQueryResult:
     analysis: str = ""
     message: str = ""
     ok: bool = False
+    kind: str = "metric"  # metric | panel | overview
+    hits: list[LabHit] = field(default_factory=list)
+    suggestions: list[str] = field(default_factory=list)
     candidates: list[LabHit] = field(default_factory=list)
 
 
@@ -182,20 +188,50 @@ def parse_intent_rules(text: str) -> QueryIntent:
     )
 
 
-def _metric_score(query_metric: str, test_name: str) -> int:
+MIN_SCORE = 70
+_ABNORMAL = frozenset({"high", "low", "slightly_high", "slightly_low"})
+
+
+def score_name(query_metric: str, test_name: str) -> int:
+    """Score a user metric string against a stored lab item name."""
     q = normalize_text(query_metric)
     n = normalize_text(test_name)
     if not q or not n:
         return 0
+    # Single CJK char (钾/钠): exact name only.
+    if len(q) == 1:
+        return 100 if q == n else 0
+
+    best = 0
     if q == n:
-        return 100
-    # Prefer the stored name containing the canonical/alias, not the reverse
-    # (avoids "蛋白" swallowing "尿微量白蛋白" equally).
-    if q in n:
-        return 80 + min(len(q), 15)
-    if n in q:
-        return 60 + min(len(n), 15)
-    return 0
+        best = 100
+    elif n.startswith(q):
+        best = max(best, 88 + min(len(q), 10))
+    elif q in n:
+        best = max(best, 80 + min(len(q), 15))
+    elif n in q:
+        best = max(best, 74 + min(len(n), 12))
+
+    for alias in (test_name, *aliases_for_test(test_name)):
+        a = normalize_text(alias)
+        if len(a) < 2:
+            continue
+        if a == q:
+            best = max(best, 97)
+        elif a in q:
+            best = max(best, 70 + min(len(a), 15))
+    return best
+
+
+def _name_tiebreak(query_metric: str, test_name: str) -> tuple[int, int]:
+    """Lower tuple wins: exact, suffix/总X, then shorter name."""
+    q = normalize_text(query_metric)
+    n = normalize_text(test_name)
+    if q == n:
+        return (0, len(n))
+    if n == f"总{q}" or n.endswith(q):
+        return (1, len(n))
+    return (2, len(n))
 
 
 def _as_date(value: Any) -> date | None:
@@ -253,8 +289,18 @@ def _filter_by_time(hits: list[LabHit], intent: QueryIntent) -> list[LabHit]:
     return hits
 
 
+def _is_urine_unit(unit: str) -> bool:
+    u = (unit or "").lower().replace("μ", "u").replace("µ", "u")
+    return "/ul" in u or "/hp" in u or "/hpf" in u
+
+
 def _sort_hits(hits: list[LabHit]) -> list[LabHit]:
-    return sorted(hits, key=lambda h: h.visit_date or date.min, reverse=True)
+    """Latest date first; on the same day prefer blood units over urine /uL."""
+    return sorted(
+        hits,
+        key=lambda h: (h.visit_date or date.min, not _is_urine_unit(h.unit), h.record_id),
+        reverse=True,
+    )
 
 
 def _to_float(value: str) -> float | None:
@@ -384,6 +430,158 @@ def resolve_person(persons: list[Person], person_key: str | None) -> Person | No
     return None
 
 
+def _catalog(records: list[MedicalRecord], person: Person) -> list[LabHit]:
+    hits: list[LabHit] = []
+    for rec in records:
+        for test in _tests_of(rec):
+            hits.append(_hit_from(rec, person, test))
+    return hits
+
+
+def _metric_remainder(text: str, person_key: str | None) -> str:
+    remainder = text
+    if person_key:
+        remainder = _strip_tokens(remainder, PERSON_ALIASES.get(person_key, (person_key,)))
+    remainder = _strip_tokens(remainder, STOP_WORDS)
+    return remainder.strip(" ，,。.?？")
+
+
+def _unique_names(hits: list[LabHit]) -> list[str]:
+    seen: list[str] = []
+    for hit in hits:
+        if hit.test_name not in seen:
+            seen.append(hit.test_name)
+    return seen
+
+
+_PREFERRED_SUGGESTIONS = (
+    "糖化血红蛋白",
+    "葡萄糖（空腹）",
+    "肌酐",
+    "总胆固醇",
+    "甘油三酯",
+    "白细胞计数",
+    "血红蛋白浓度",
+    "尿微量白蛋白",
+    "丙氨酸氨基转移酶",
+    "钾",
+)
+
+_VITALS = {
+    "血压": "血压不在化验单里，目前只检索检验项目（肝肾功能、血脂、血糖等）。",
+    "体温": "体温不在化验单里，目前只检索检验项目。",
+    "心率": "心率不在化验单里，目前只检索检验项目。",
+}
+
+
+def _suggest_names(query: str, names: list[str], limit: int = 8) -> list[str]:
+    q = normalize_text(query)
+    have = {normalize_text(n): n for n in names}
+    if len(q) >= 2:
+        grams = {q[i : i + 2] for i in range(len(q) - 1)}
+        ranked: list[tuple[int, str]] = []
+        for name in names:
+            n = normalize_text(name)
+            overlap = sum(1 for g in grams if g in n)
+            if overlap:
+                ranked.append((overlap, name))
+        ranked.sort(key=lambda item: (-item[0], len(item[1])))
+        if ranked:
+            return [name for _, name in ranked[:limit]]
+    preferred = [have[normalize_text(n)] for n in _PREFERRED_SUGGESTIONS if normalize_text(n) in have]
+    return (preferred or names)[:limit]
+
+
+def _latest_by_name(hits: list[LabHit], name: str) -> LabHit | None:
+    matched = [h for h in hits if normalize_text(h.test_name) == normalize_text(name)]
+    matched = _sort_hits(matched)
+    return matched[0] if matched else None
+
+
+def _overview_result(intent: QueryIntent, hits: list[LabHit]) -> LabQueryResult:
+    dated = [h for h in hits if h.visit_date]
+    if not dated:
+        return LabQueryResult(intent=intent, message="有化验记录，但没有就诊日期，无法判断最近一次。")
+    latest_day = max(h.visit_date for h in dated if h.visit_date)
+    day_hits = [h for h in hits if h.visit_date == latest_day]
+    # De-dupe by name, keep first (already mixed records that day)
+    uniq: list[LabHit] = []
+    seen: set[str] = set()
+    for hit in day_hits:
+        key = normalize_text(hit.test_name)
+        if key in seen:
+            continue
+        seen.add(key)
+        uniq.append(hit)
+    abn = [h for h in uniq if h.status in _ABNORMAL]
+    person = intent.person_name or uniq[0].person_name
+    parts = [f"{person} 最近一次化验是 {latest_day.isoformat()}，共 {len(uniq)} 项"]
+    if abn:
+        parts.append(f"其中 {len(abn)} 项异常：")
+        parts.append(
+            "、".join(
+                f"{h.test_name} {h.value}{h.unit or ''}（{STATUS_LABEL.get(h.status, h.status)}）" for h in abn[:10]
+            )
+        )
+        parts.append("。")
+    else:
+        parts.append("，未标出明显异常。")
+    if intent.inferred_person:
+        parts.append(f"未指定人员，已按 {person} 查询。")
+    hit = abn[0] if abn else uniq[0]
+    return LabQueryResult(
+        intent=intent,
+        hit=hit,
+        hits=uniq,
+        analysis="".join(parts),
+        ok=True,
+        kind="overview",
+    )
+
+
+def _panel_result(intent: QueryIntent, hits: list[LabHit], panel: str) -> LabQueryResult:
+    timed = _filter_by_time(hits, intent) or hits
+    picked: list[LabHit] = []
+    for name in PANELS[panel]:
+        latest = _latest_by_name(timed, name)
+        if latest:
+            picked.append(latest)
+    if not picked:
+        return LabQueryResult(
+            intent=intent,
+            message=f"化验单里还没有「{panel}」相关项目。",
+            suggestions=_suggest_names(panel, _unique_names(hits)),
+        )
+    abn = [h for h in picked if h.status in _ABNORMAL]
+    person = intent.person_name or picked[0].person_name
+    bits = [
+        f"{h.test_name} {h.value}{h.unit or ''}（{STATUS_LABEL.get(h.status, h.status or '未知')}）" for h in picked
+    ]
+    analysis = f"{person} 的{panel}：" + "；".join(bits) + "。"
+    if abn:
+        analysis += f"其中 {len(abn)} 项异常，建议对照化验单咨询医生。"
+    if intent.inferred_person:
+        analysis += f"未指定人员，已按 {person} 查询。"
+    return LabQueryResult(
+        intent=intent,
+        hit=picked[0],
+        hits=picked,
+        analysis=analysis,
+        ok=True,
+        kind="panel",
+    )
+
+
+def _pick_metric(query_metric: str, scored: list[tuple[int, LabHit]]) -> tuple[list[LabHit], int]:
+    best = max(s for s, _ in scored)
+    top = [h for s, h in scored if s == best]
+    names = {h.test_name for h in top}
+    if len(names) > 1:
+        winner = min(names, key=lambda name: _name_tiebreak(query_metric, name))
+        top = [h for h in top if h.test_name == winner]
+    return _sort_hits(top), best
+
+
 async def run_lab_query(
     db: AsyncSession,
     query: str,
@@ -401,18 +599,23 @@ async def run_lab_query(
     intent = parse_intent_rules(text)
     persons = await list_persons(db)
 
-    if allow_llm and not intent.metric:
+    remainder = _metric_remainder(text, intent.person_key)
+    panel = find_panel(remainder)
+    if not intent.metric and remainder:
+        intent.metric = remainder
+
+    if allow_llm and not intent.metric and not panel and remainder:
         llm_fn = llm_fn or _call_llm_intent
         llm_data = llm_fn(text)
         if llm_data:
             intent = merge_llm_intent(intent, llm_data)
+            remainder = intent.metric or remainder
 
     person = resolve_person(persons, intent.person_key)
     if intent.person_key and person is None:
         return LabQueryResult(intent=intent, message=f"找不到人员「{intent.person_key}」。目前档案是 qian / tjh。")
 
     if person is None:
-        # Default to the person who actually has structured labs.
         lab_owners: list[Person] = []
         for p in persons:
             recs = await list_medical_records(db, person_id=p.id, record_type="lab_report")
@@ -432,45 +635,62 @@ async def run_lab_query(
         intent.person_name = person.name
 
     records = await list_medical_records(db, person_id=person.id, record_type="lab_report")
-    if not any(_tests_of(r) for r in records):
+    catalog = _catalog(records, person)
+    if not catalog:
         return LabQueryResult(
             intent=intent,
             message=f"{person.name} 目前没有结构化化验报告可查询（只有已 OCR 并解析出检验项目的化验单才能检索）。",
         )
 
-    if not intent.metric:
-        return LabQueryResult(
-            intent=intent,
-            message="没能识别要查的指标。可以试试：糖化血红蛋白、肌酐、尿微量白蛋白、ALT。",
-        )
+    names = _unique_names(catalog)
+    metric_query = remainder or intent.metric or ""
 
-    scored: list[tuple[int, LabHit]] = []
-    for rec in records:
-        for test in _tests_of(rec):
-            score = _metric_score(intent.metric, str(test.get("name") or ""))
-            if score <= 0:
-                continue
-            scored.append((score, _hit_from(rec, person, test)))
+    vital_msg = _VITALS.get(normalize_text(metric_query))
+    if vital_msg:
+        return LabQueryResult(intent=intent, message=vital_msg, suggestions=_suggest_names(metric_query, names))
+
+    if panel:
+        intent.metric = panel
+        return _panel_result(intent, catalog, panel)
+
+    if not metric_query:
+        return _overview_result(intent, catalog)
+
+    scored = [(score_name(metric_query, h.test_name), h) for h in catalog]
+    scored = [(s, h) for s, h in scored if s >= (100 if len(normalize_text(metric_query)) == 1 else MIN_SCORE)]
     if not scored:
+        # Try alias-canonical as a second pass (HbA1c → 糖化血红蛋白).
+        aliased = find_metric(metric_query)
+        if aliased and aliased != metric_query:
+            scored = [(score_name(aliased, h.test_name), h) for h in catalog]
+            scored = [(s, h) for s, h in scored if s >= MIN_SCORE]
+            if scored:
+                metric_query = aliased
+    if not scored:
+        suggestions = _suggest_names(metric_query, names)
+        if suggestions:
+            hint = f"可以试试：{'、'.join(suggestions)}。"
+        else:
+            hint = f"{person.name} 的化验项目包括：{'、'.join(names[:8])}。"
         return LabQueryResult(
             intent=intent,
-            message=f"在 {person.name} 的化验单里没有找到「{intent.metric}」。",
+            message=f"在 {person.name} 的化验单里没有找到「{metric_query}」。{hint}",
+            suggestions=suggestions or names[:8],
         )
 
-    best = max(s for s, _ in scored)
-    matched = _sort_hits([h for s, h in scored if s == best])
+    matched, _best = _pick_metric(metric_query, scored)
     timed = _filter_by_time(matched, intent)
     if intent.time_mode in {"on_date", "in_month"} and not timed:
         return LabQueryResult(
             intent=intent,
-            message=f"找到了「{intent.metric}」，但指定时间没有记录。最近一次是 {_fmt_hit(matched[0])}。",
+            message=f"找到了「{matched[0].test_name}」，但指定时间没有记录。最近一次是 {_fmt_hit(matched[0])}。",
             candidates=matched[:3],
+            suggestions=[matched[0].test_name],
         )
 
     pool = timed or matched
     hit = pool[0]
     previous = pool[1] if len(pool) > 1 else None
-    # previous should be strictly older than hit, even if time filter collapsed
     if previous is None:
         older = [
             h
@@ -479,14 +699,16 @@ async def run_lab_query(
         ]
         previous = older[0] if older else None
 
+    intent.metric = hit.test_name
     analysis = build_analysis(hit, previous, intent.inferred_person)
     return LabQueryResult(
         intent=intent,
         hit=hit,
         previous=previous,
+        hits=[hit],
         analysis=analysis,
         ok=True,
-        message="",
+        kind="metric",
     )
 
 
@@ -529,4 +751,7 @@ def result_to_dict(result: LabQueryResult) -> dict[str, Any]:
         "person": result.intent.person_name,
         "hit": hit_dict(result.hit),
         "previous": hit_dict(result.previous),
+        "kind": result.kind,
+        "hits": [hit_dict(h) for h in result.hits if h is not None],
+        "suggestions": result.suggestions,
     }

@@ -49,7 +49,7 @@ METRIC_ALIASES: dict[str, tuple[str, ...]] = {
     "红细胞压积": ("红细胞压积", "hct", "红细胞比积"),
     "平均红细胞体积": ("平均红细胞体积", "mcv"),
     "平均红细胞血红蛋白含量": ("平均红细胞血红蛋白含量", "mch"),
-    "白细胞计数": ("白细胞计数", "wbc", "白血球"),
+    "白细胞计数": ("白细胞计数", "白细胞", "wbc", "白血球", "白血球计数"),
     "血小板计数": ("血小板计数", "plt", "血小板"),
     "中性粒细胞百分比": ("中性粒细胞百分比", "neut%", "中性粒细胞"),
     "D-二聚体": ("D-二聚体", "d二聚体", "ddimer", "d-dimer"),
@@ -59,11 +59,64 @@ METRIC_ALIASES: dict[str, tuple[str, ...]] = {
     "肾素活性质谱法": ("肾素活性质谱法", "肾素活性", "肾素"),
     "醛固酮肾素活性比值": ("醛固酮肾素活性比值", "arr"),
     "血管紧张素II质谱法": ("血管紧张素II质谱法", "血管紧张素ii", "血管紧张素"),
-    "葡萄糖": ("葡萄糖", "glu", "血糖"),
+    "葡萄糖（空腹）": ("葡萄糖（空腹）", "空腹血糖", "血糖", "fbg", "fpg"),
+    "葡萄糖": ("尿糖", "glu"),
+    "糖化白蛋白": ("糖化白蛋白", "糖化白", "ga"),
+    "总胆固醇": ("总胆固醇", "胆固醇", "tch", "tc", "chol"),
+    "甘油三酯": ("甘油三酯", "甘油三脂", "tg", "trig"),
+    "低密度脂蛋白胆固醇": ("低密度脂蛋白胆固醇", "低密度脂蛋白", "ldl", "ldl-c"),
+    "高密度脂蛋白胆固醇": ("高密度脂蛋白胆固醇", "高密度脂蛋白", "hdl", "hdl-c"),
+    "尿酸": ("尿酸", "ua", "uric"),
+    "钠": ("血钠", "钠离子", "na"),
+    "钾": ("血钾", "钾离子", "k"),
+    "氯": ("血氯", "氯离子", "cl"),
     "蛋白": ("尿蛋白", "蛋白"),
     "比重": ("比重", "sg"),
     "ph": ("ph", "酸碱度"),
     "亚硝酸盐": ("亚硝酸盐", "nit"),
+    "肌酸激酶": ("肌酸激酶", "ck"),
+    "前白蛋白": ("前白蛋白", "palb"),
+}
+
+# Combo queries → constituent lab names (matched against stored tests).
+PANELS: dict[str, tuple[str, ...]] = {
+    "肝功能": (
+        "丙氨酸氨基转移酶",
+        "天门冬氨酸氨基转移酶",
+        "碱性磷酸酶",
+        "γ-谷氨酰转移酶",
+        "总胆红素",
+        "直接胆红素",
+        "总蛋白",
+        "白蛋白",
+        "球蛋白",
+        "前白蛋白",
+    ),
+    "转氨酶": ("丙氨酸氨基转移酶", "天门冬氨酸氨基转移酶"),
+    "肾功能": ("尿素", "肌酐", "估算肾小球滤过率", "尿酸"),
+    "血脂": ("总胆固醇", "甘油三酯", "低密度脂蛋白胆固醇", "高密度脂蛋白胆固醇"),
+    "血常规": (
+        "红细胞计数",
+        "血红蛋白浓度",
+        "白细胞计数",
+        "血小板计数",
+        "中性粒细胞百分比",
+        "淋巴细胞百分比",
+    ),
+    "尿常规": ("颜色", "比重", "pH", "蛋白", "葡萄糖", "酮体", "亚硝酸盐", "尿隐血", "白细胞酯酶"),
+    "电解质": ("钠", "钾", "氯", "二氧化碳", "阴离子隙"),
+    "心肌酶": ("肌酸激酶", "肌酸激酶MB亚型"),
+}
+
+PANEL_ALIASES: dict[str, tuple[str, ...]] = {
+    "肝功能": ("肝功能", "肝功", "肝脏功能", "肝酶"),
+    "转氨酶": ("转氨酶", "转氨酶高"),
+    "肾功能": ("肾功能", "肾功", "肾脏功能"),
+    "血脂": ("血脂", "血脂四项", "脂代谢"),
+    "血常规": ("血常规", "血象"),
+    "尿常规": ("尿常规", "尿检"),
+    "电解质": ("电解质", "离子"),
+    "心肌酶": ("心肌酶", "心酶"),
 }
 
 
@@ -110,3 +163,33 @@ CANONICAL_DISPLAY = {normalize_text(name): name for name in METRIC_ALIASES}
 
 def canonical_metric_names() -> list[str]:
     return list(METRIC_ALIASES.keys())
+
+
+def aliases_for_test(test_name: str) -> tuple[str, ...]:
+    """Aliases whose canonical equals this stored test name."""
+    n = normalize_text(test_name)
+    found: list[str] = []
+    for canonical, aliases in METRIC_ALIASES.items():
+        if normalize_text(canonical) == n:
+            found.append(canonical)
+            found.extend(aliases)
+    return tuple(found)
+
+
+def find_panel(text: str) -> str | None:
+    """Match a combo query (肝功能/血脂) against the stripped remainder.
+
+    Exact alias match only — substring would steal 丙氨酸氨基转移酶 via 转氨酶.
+    """
+    q = normalize_text(text)
+    if len(q) < 2:
+        return None
+    best: str | None = None
+    best_len = 0
+    for canonical, aliases in PANEL_ALIASES.items():
+        for alias in (canonical, *aliases):
+            key = normalize_text(alias)
+            if key == q and len(key) > best_len:
+                best = canonical
+                best_len = len(key)
+    return best
