@@ -2,9 +2,6 @@
 
 老年父母健康管理平台 — 精简版，专注核心功能。
 
-## 项目路径
-`~/dev/chronocare`
-
 ## 技术栈
 - **后端**: FastAPI + SQLAlchemy 2.0 + Alembic
 - **前端**: HTMX + Tailwind CSS + Jinja2
@@ -113,20 +110,6 @@ uv run alembic revision --autogenerate -m "描述"
 uv run alembic upgrade head
 ```
 
-## 当前进度
-- Phase 1 MVP ✅
-- Phase 2 增强功能 ✅
-- Phase 3 周报/月报 PDF 导出 ✅
-- Phase 4 精简重构 (v0.3.0) ✅
-  - 删除40+文件，保留3核心功能
-  - 新增就医记录OCR功能
-
-## OCR 实现状态
-v0.5.0 已集成两层 OCR Pipeline:
-- Layer 1: macOS Vision Framework (scripts/vision_ocr.swift)
-- Layer 2: LLM 结构化解析 (services/ocr_parser.py, OpenRouter/Gemini)
-- 支持4种类型: 就医记录/化验报告/处方/医嘱
-
 ## Git 工作流
 - **feature branch → commit → PR（未测不推）**
 - 单人开发，不用 worktree，直接在本地拉 feature branch
@@ -143,6 +126,7 @@ v0.5.0 已集成两层 OCR Pipeline:
 
 ## 收尾 Checklist（每次会话结束前必须执行）
 
+
 ```
 □ STATUS.md — 本次修改涉及的功能，对应条目是否更新（日期 + 阶段描述）
 □ vibe-coding-log — 新增当日记录，append 到文件开头
@@ -155,28 +139,6 @@ v0.5.0 已集成两层 OCR Pipeline:
 □ Wiki沉淀 — 发现新模式/踩坑记录/项目惯例，同步到 hermes-base/projects/
 ```
 
-## Session 收尾规范 (强制)
+触发条件（任一）：有新 commits / STATUS.md 变化 / 新增或删除功能模块 / 版本号变更。
 
-每次 session 结束前，必须检查并更新以下文件，缺一不可：
-
-### 触发条件
-满足任一即触发收尾流程：
-1. 有新的 git commits
-2. STATUS.md 内容发生变化
-3. 新增/删除功能模块
-4. 版本号变更
-
-### 必须执行的步骤
-1. **STATUS.md** — 反映当前实际状态
-2. **handoff 文件** — 命名 `YYMMDD-handoff.md`，内容必须包含：
-   - 当前版本号和分支状态
-   - 本次 session 所有变更摘要
-   - 待处理事项（勾选已完成的，保留未完成的）
-   - 关键文件表
-3. **vibe-coding-log** — 按日期记录当日开发内容
-4. **git push** — 确保所有 commits 推送到 origin
-
-### 防漂移规则
-- handoff 文件日期必须 >= STATUS.md 最后更新日期
-- 如果 handoff 日期 < STATUS.md 日期，说明 handoff 过期，必须立即更新
-- 晨检 cron 也会检查 handoff 新鲜度
+防漂移：handoff 日期必须 >= STATUS.md 最后更新日期，过期立即更新（晨检 cron 也会检查）。

@@ -196,3 +196,17 @@ uv run pytest                              # 测试
 uv run ruff check .                        # Lint
 uv run alembic upgrade head                # 数据库迁移
 ```
+
+## 进度与 OCR 状态（2026-11 自 AGENTS.md 迁入）
+
+- Phase 1 MVP ✅
+- Phase 2 增强功能 ✅
+- Phase 3 周报/月报 PDF 导出 ✅
+- Phase 4 精简重构 (v0.3.0) ✅
+  - 删除40+文件，保留3核心功能
+  - 新增就医记录OCR功能
+
+v0.5.0 已集成两层 OCR Pipeline:
+- Layer 1: macOS Vision Framework (scripts/vision_ocr.swift)
+- Layer 2: LLM 结构化解析 (services/ocr_parser.py, OpenRouter/Gemini)
+- 支持4种类型: 就医记录/化验报告/处方/医嘱
