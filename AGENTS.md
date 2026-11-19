@@ -2,9 +2,6 @@
 
 老年父母健康管理平台 — 精简版，专注核心功能。
 
-## 项目路径
-`/Users/mt16/dev/chronocare`
-
 ## 技术栈
 - **后端**: FastAPI + SQLAlchemy 2.0 + Alembic
 - **前端**: HTMX + Tailwind CSS + Jinja2
